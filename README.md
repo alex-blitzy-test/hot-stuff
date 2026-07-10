@@ -2,7 +2,9 @@
 
 > A **Billboard Hot 100 audio-feature analytics** application — a Python/Flask JSON API and a React single-page app (SPA) for browsing weekly charts and analyzing how [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) trend over time.
 
-`hot-stuff` ingests weekly Billboard Hot 100 chart data (enriched with Spotify audio features) into PostgreSQL and serves it through a single Flask process that hosts both the compiled React SPA at `/` and a JSON API under `/api/*`. *Source: api/__init__.py:L8; api/routes.py:L13-L69*
+`hot-stuff` ingests weekly Billboard Hot 100 chart data (enriched with Spotify audio features) into PostgreSQL and serves it through a single Flask process that hosts both the compiled React SPA at `/` and a JSON API under `/api/*`. *Source: api/__init__.py:L50; api/routes.py:L35-L182*
+
+> **A note on terminology (`server.js` / JSDoc).** This repository contains **no `server.js`** file, and the backend "server" is written in **Python with the Flask framework** (`app.py` plus the `api/` package), not Node.js. *Source: app.py:L29; api/__init__.py:L42-L50* The original request to "add JSDoc comments to `server.js` functions" was therefore fulfilled in the language-appropriate way: the backend modules, functions, and classes are documented with **Google-style, PEP 257-compliant Python docstrings** (mapping JSDoc's `@param` / `@returns` / `@throws` onto docstring `Args:` / `Returns:` / `Raises:`). The only JavaScript in the repository is the React single-page app under `frontend/src/`, which is a UI client rather than a server. *Source: frontend/package.json:L12,L15*
 
 ## Table of Contents
 
@@ -34,15 +36,15 @@ The first number one song of the Billboard Hot 100 was "Poor Little Fool" by Ric
 
 ### What this app does
 
-End to end, `hot-stuff` turns raw weekly chart appearances into browsable, analyzable data. A separate weekly job scrapes the Billboard site, stores each ranked song, and uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to attach [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) (energy, danceability, valence, and more) to every track. *Source: README.md (original narrative); api/models.py:L4-L37* The Flask backend then exposes this data as a JSON API for browsing individual **chart weeks**, searching by artist, looking up a track by its Spotify ID, and analyzing how a given **audio feature** trends year over year (including a **rolling average**). *Source: api/routes.py:L13-L69* The React front end consumes that API and renders interactive visualizations.
+End to end, `hot-stuff` turns raw weekly chart appearances into browsable, analyzable data. A separate weekly job scrapes the Billboard site, stores each ranked song, and uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to attach [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) (energy, danceability, valence, and more) to every track. *Source: original project README (preserved baseline narrative); api/models.py:L4-L89* The Flask backend then exposes this data as a JSON API for browsing individual **chart weeks**, searching by artist, looking up a track by its Spotify ID, and analyzing how a given **audio feature** trends year over year (including a **rolling average**). *Source: api/routes.py:L35-L182* The React front end consumes that API and renders interactive visualizations.
 
 ## Features
 
-- **Weekly Hot 100 browsing** — retrieve every ranked song for a given chart week, plus per-week audio-feature averages. *Source: api/routes.py:L35-L45*
-- **Artist search** — case-insensitive substring match across all chart appearances for an artist, newest week first. *Source: api/routes.py:L49-L55*
-- **Per-track lookup by Spotify ID** — all chart appearances of a track, ordered by rank. *Source: api/routes.py:L26-L31*
-- **Yearly audio-feature analysis** — the annual average of an audio feature together with a **5-year rolling average**. *Source: api/routes.py:L60-L69; api/funcs.py:L27-L37*
-- **Single-page redirect to the current week** — the API root redirects to the latest chart week. *Source: api/routes.py:L19-L22*
+- **Weekly Hot 100 browsing** — retrieve every ranked song for a given chart week, plus per-week audio-feature averages. *Source: api/routes.py:L96-L124*
+- **Artist search** — case-insensitive substring match across all chart appearances for an artist, newest week first. *Source: api/routes.py:L128-L150*
+- **Per-track lookup by Spotify ID** — all chart appearances of a track, ordered by rank. *Source: api/routes.py:L72-L92*
+- **Yearly audio-feature analysis** — the annual average of an audio feature together with a **5-year rolling average**. *Source: api/routes.py:L155-L182; api/funcs.py:L44-L71*
+- **Single-page redirect to the current week** — the API root redirects to the latest chart week. *Source: api/routes.py:L53-L68*
 - **Interactive charts** — the React front end renders visualizations with the [amCharts](https://www.amcharts.com/) library. *Source: frontend/package.json:L6*
 
 ## Tech Stack
@@ -54,17 +56,17 @@ Only versions verified from the repository's manifests and container definitions
 | Component | Version | Source |
 |-----------|---------|--------|
 | Python (runtime image) | 3.11-slim-buster | Dockerfile:L1 |
-| Flask | 2.0.1 | requirements.txt |
-| Flask-Cors | 3.0.10 | requirements.txt |
-| Flask-SQLAlchemy | 2.5.1 | requirements.txt |
-| flask-marshmallow | 0.14.0 | requirements.txt |
-| marshmallow | 3.12.1 | requirements.txt |
-| marshmallow-sqlalchemy | 0.26.1 | requirements.txt |
-| SQLAlchemy | 1.4.19 | requirements.txt |
-| gunicorn | 20.1.0 | requirements.txt (pinned but **not** used by the container `CMD` — see [Deployment](#deployment)) |
-| psycopg2 / psycopg2-binary | 2.9.6 / 2.9.5 | requirements.txt |
-| numpy | 1.24.2 | requirements.txt |
-| pandas | 2.0.0 | requirements.txt |
+| Flask | 2.0.1 | requirements.txt:L2 |
+| Flask-Cors | 3.0.10 | requirements.txt:L3 |
+| Flask-SQLAlchemy | 2.5.1 | requirements.txt:L5 |
+| flask-marshmallow | 0.14.0 | requirements.txt:L4 |
+| marshmallow | 3.12.1 | requirements.txt:L11 |
+| marshmallow-sqlalchemy | 0.26.1 | requirements.txt:L12 |
+| SQLAlchemy | 1.4.19 | requirements.txt:L21 |
+| gunicorn | 20.1.0 | requirements.txt:L7 (pinned but **not** used by the container `CMD` — see [Deployment](#deployment)) |
+| psycopg2 / psycopg2-binary | 2.9.6 / 2.9.5 | requirements.txt:L16 / L15 |
+| numpy | 1.24.2 | requirements.txt:L13 |
+| pandas | 2.0.0 | requirements.txt:L14 |
 
 ### Database
 
@@ -83,7 +85,7 @@ Only versions verified from the repository's manifests and container definitions
 
 ## Architecture
 
-`hot-stuff` uses a **single-origin design**: one Flask process serves **both** the compiled React SPA and the JSON API. The Flask app is constructed with `static_folder='../frontend/build'` and `static_url_path='/'`, so the root route returns the SPA's `index.html`, while the API lives under `/api/*`. *Source: api/__init__.py:L8; api/routes.py:L13-L15* Cross-origin requests are enabled with `CORS(app)`. *Source: api/__init__.py:L9* Data is read from PostgreSQL through SQLAlchemy, and the database itself is populated by an external pipeline (see [Data Pipeline](#data-pipeline)).
+`hot-stuff` uses a **single-origin design**: one Flask process serves **both** the compiled React SPA and the JSON API. The Flask app is constructed with `static_folder='../frontend/build'` and `static_url_path='/'`, so the root route returns the SPA's `index.html`, while the API lives under `/api/*`. *Source: api/__init__.py:L50; api/routes.py:L35-L49* Cross-origin requests are enabled with `CORS(app)`. *Source: api/__init__.py:L51* Data is read from PostgreSQL through SQLAlchemy, and the database itself is populated by an external pipeline (see [Data Pipeline](#data-pipeline)).
 
 ```mermaid
 graph LR
@@ -94,9 +96,9 @@ graph LR
     F -->|serves static build| U
 ```
 
-*System-context diagram. Reflects Source: api/\_\_init\_\_.py and docker-compose.yml.*
+*System-context diagram. Reflects Source: `api/__init__.py` and `docker-compose.yml`.*
 
-The sequence below traces a request to `GET /api/week/<week>`, showing how the requested week is normalized to a Saturday and how the per-week aggregation is produced. *Source: api/routes.py:L35-L45; api/funcs.py:L5-L58*
+The sequence below traces a request to `GET /api/week/<week>`, showing how the requested week is normalized to a Saturday and how the per-week aggregation is produced. *Source: api/routes.py:L96-L124; api/funcs.py:L5-L41,L74-L105*
 
 ```mermaid
 sequenceDiagram
@@ -115,16 +117,16 @@ sequenceDiagram
 
 ```text
 hot-stuff/
-├── app.py                # Entry point: imports the Flask app and runs it (Source: app.py:L1-L4)
+├── app.py                # Entry point: imports the Flask app and runs it (Source: app.py:L1-L37)
 ├── api/                  # Backend Flask package
-│   ├── __init__.py       # Flask bootstrap: app, CORS, DB, static serving of the React build (Source: api/__init__.py:L1-L21)
-│   ├── routes.py         # Six HTTP route handlers (Source: api/routes.py:L13-L69)
-│   ├── models.py         # SQLAlchemy models (Tracks, YearlyAvg) + Marshmallow schemas (Source: api/models.py:L4-L64)
-│   └── funcs.py          # Helpers: week normalization, rolling average, weekly aggregation (Source: api/funcs.py:L5-L58)
+│   ├── __init__.py       # Flask bootstrap: app, CORS, DB, static serving of the React build (Source: api/__init__.py:L1-L68)
+│   ├── routes.py         # Six HTTP route handlers (Source: api/routes.py:L1-L182)
+│   ├── models.py         # SQLAlchemy models (Tracks, YearlyAvg) + Marshmallow schemas (Source: api/models.py:L4-L171)
+│   └── funcs.py          # Helpers: week normalization, rolling average, weekly aggregation (Source: api/funcs.py:L5-L105)
 ├── frontend/             # React single-page app (client)
 │   ├── src/              # React source (components: about, navigation, tracks, trends; styles)
 │   ├── public/           # Static public assets
-│   ├── build/            # Compiled production build served by Flask at "/" (Source: api/__init__.py:L8)
+│   ├── build/            # Compiled production build served by Flask at "/" (Source: api/__init__.py:L50)
 │   └── package.json      # Frontend dependencies + scripts (Source: frontend/package.json)
 ├── requirements.txt      # Python dependencies (Source: requirements.txt)
 ├── Dockerfile            # API image: python:3.11-slim-buster (Source: Dockerfile)
@@ -138,7 +140,7 @@ hot-stuff/
 
 - **Docker & Docker Compose** — for the containerized path, or
 - **Python 3.11** and **Node.js / npm** — for local development. *Source: Dockerfile:L1; frontend/package.json*
-- **A pre-populated PostgreSQL database.** This repository expects chart data to already be loaded. The database is filled by an **external, out-of-repository** weekly scraper plus a Spotipy audio-feature enrichment pipeline; that ingestion script is **not** part of this repo and is **not** installed or run by this project. *Source: README.md original narrative (weekly scraper + Spotipy).* See [Data Pipeline](#data-pipeline) for details. Without externally loaded data, the API will return empty results (and endpoints that aggregate over rows, such as `/api/week/<week>` and `/api/analysis/<feature>`, require populated tables).
+- **A pre-populated PostgreSQL database.** This repository expects chart data to already be loaded. The database is filled by an **external, out-of-repository** weekly scraper plus a Spotipy audio-feature enrichment pipeline; that ingestion script is **not** part of this repo and is **not** installed or run by this project. *Source: original project README (preserved baseline narrative); see [Data Pipeline](#data-pipeline).* See [Data Pipeline](#data-pipeline) for details. Without externally loaded data, the API will return empty results (and endpoints that aggregate over rows, such as `/api/week/<week>` and `/api/analysis/<feature>`, require populated tables).
 
 ### Run with Docker Compose
 
@@ -146,7 +148,7 @@ hot-stuff/
 docker-compose up
 ```
 
-This builds the `api` image from the `Dockerfile` and starts a `postgres:15` container. *Source: docker-compose.yml* The API becomes reachable at `http://localhost:80` because Compose maps host port `80` to the container's Flask port `5000`, and PostgreSQL is published on `5432`. *Source: docker-compose.yml:L11,L18*
+This builds the `api` image from the `Dockerfile` and starts a `postgres:15` container. *Source: docker-compose.yml:L5,L16* The API becomes reachable at `http://localhost:80` because Compose maps host port `80` to the container's Flask port `5000`, and PostgreSQL is published on `5432`. *Source: docker-compose.yml:L11,L18*
 
 ### Local development
 
@@ -164,7 +166,7 @@ flask run
 python3 app.py
 ```
 
-*Source: .flaskenv (FLASK_APP / FLASK_ENV); app.py:L1-L4.* `flask run` serves on port `5000` by default; `python3 app.py` binds `host='0.0.0.0'`. *Source: app.py:L4*
+*Source: .flaskenv:L1-L2; app.py:L1-L27.* `flask run` serves on port `5000` by default; `python3 app.py` binds `host='0.0.0.0'`. *Source: app.py:L37*
 
 **Frontend (React SPA):**
 
@@ -191,10 +193,10 @@ All runtime configuration is supplied through environment variables and Flask co
 
 | Variable | Value / Example | Where set | Purpose |
 |----------|-----------------|-----------|---------|
-| `FLASK_APP` | `app.py` | `.flaskenv` | Module the Flask CLI loads for `flask run`. *Source: .flaskenv* |
-| `FLASK_ENV` | `development` | `.flaskenv` | Selects development mode (debugger/reloader) for the Flask CLI. *Source: .flaskenv* |
-| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | `api/__init__.py:L12` | Database connection string. The host `postgres` is the Docker Compose **service name**. *Source: api/__init__.py:L12,L14* |
-| `SQLALCHEMY_TRACK_MODIFICATIONS` | `False` | `api/__init__.py:L15` | Disables the SQLAlchemy modification-tracking overhead. *Source: api/__init__.py:L15* |
+| `FLASK_APP` | `app.py` | `.flaskenv` | Module the Flask CLI loads for `flask run`. *Source: .flaskenv:L1* |
+| `FLASK_ENV` | `development` | `.flaskenv` | Selects development mode (debugger/reloader) for the Flask CLI. *Source: .flaskenv:L2* |
+| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | `api/__init__.py:L57` | Database connection string. The host `postgres` is the Docker Compose **service name**. *Source: api/__init__.py:L55,L57* |
+| `SQLALCHEMY_TRACK_MODIFICATIONS` | `False` | `api/__init__.py:L58` | Disables the SQLAlchemy modification-tracking overhead. *Source: api/__init__.py:L58* |
 | `POSTGRES_USER` | `postgres` | `docker-compose.yml:L20` | PostgreSQL user for the container. *Source: docker-compose.yml:L20* |
 | `POSTGRES_PASSWORD` | `postgres` | `docker-compose.yml:L21` | PostgreSQL password for the container. *Source: docker-compose.yml:L21* |
 | `POSTGRES_DB` | `db` | `docker-compose.yml:L22` | Default database name created in the container. *Source: docker-compose.yml:L22* |
@@ -202,13 +204,15 @@ All runtime configuration is supplied through environment variables and Flask co
 
 **Published ports:** `api` maps host `80` → container `5000` *(Source: docker-compose.yml:L11)*; `postgres` maps `5432` → `5432` *(Source: docker-compose.yml:L18)*.
 
+> **Security — development credentials only.** The database values documented above — `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=db`, and the `SQLALCHEMY_DATABASE_URI` connection string `postgresql://postgres:postgres@postgres/db` — are **local development defaults committed to this repository for convenience**. They are **not** safe for production. A production deployment **must** supply strong, unique credentials through environment variables or a dedicated secrets manager, **must not** reuse the `postgres`/`postgres` values, and should avoid committing real secrets to version control. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55*
+
 ## API Reference
 
-The API is written in Python with the Flask framework. *Source: api/\_\_init\_\_.py:L1-L8* Base URL is `http://localhost` when running via Docker Compose (host port `80`), or `http://localhost:5000` when running Flask directly. All six routes are documented below. Example JSON payloads are **illustrative** (synthesized from the handler and schema definitions); there is no bundled test dataset.
+The API is written in Python with the Flask framework. *Source: `api/__init__.py`:L42-L50* Base URL is `http://localhost` when running via Docker Compose (host port `80`), or `http://localhost:5000` when running Flask directly. All six routes are documented below. Example JSON payloads are **illustrative** (synthesized from the handler and schema definitions); there is no bundled test dataset.
 
 ### `GET /` — serve the React SPA
 
-Serves the compiled SPA entry point `index.html` from the static build folder. Returns **HTML**, not JSON. *Source: api/routes.py:L13-L15*
+Serves the compiled SPA entry point `index.html` from the static build folder. Returns **HTML**, not JSON. *Source: api/routes.py:L35-L49*
 
 ```bash
 curl http://localhost/
@@ -217,14 +221,14 @@ curl http://localhost/
 ```html
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8" /><title>top-100</title></head>
+  <head><meta charset="utf-8" /><title>Hot Stuff</title></head>
   <body><div id="root"></div></body>
 </html>
 ```
 
 ### `GET /api/` — redirect to the current week
 
-Redirects (HTTP **302**) to `week/{currentWeek}`, where `currentWeek` is computed by `get_query_week(None)` (today's normalized chart week). The relative target resolves to `/api/week/<currentWeek>`. *Source: api/routes.py:L19-L22; api/funcs.py:L5-L24*
+Redirects (HTTP **302**) to `week/{currentWeek}`, where `currentWeek` is computed by `get_query_week(None)` (today's normalized chart week). The relative target resolves to `/api/week/<currentWeek>`. *Source: api/routes.py:L53-L68; api/funcs.py:L5-L41*
 
 ```bash
 curl -i http://localhost/api/
@@ -239,9 +243,9 @@ Location: week/2024-01-06
 
 | Method | Path | Path parameter | Returns |
 |--------|------|----------------|---------|
-| GET | `/api/track/<spotify_id>` | `spotify_id` — the Spotify track ID | JSON **array** of track objects matching `spotify_id`, ordered by `rank`. *Source: api/routes.py:L26-L31* |
+| GET | `/api/track/<spotify_id>` | `spotify_id` — the Spotify track ID | JSON **array** of track objects matching `spotify_id`, ordered by `rank`. *Source: api/routes.py:L72-L92* |
 
-Each element carries all 15 `TrackSchema` fields. *Source: api/models.py:L40-L45*
+Each element carries all 15 `TrackSchema` fields. *Source: api/models.py:L92-L112*
 
 ```bash
 curl http://localhost/api/track/0VjIjW4GlUZAMYd2vXMi3b
@@ -273,9 +277,9 @@ curl http://localhost/api/track/0VjIjW4GlUZAMYd2vXMi3b
 
 | Method | Path | Path parameter | Returns |
 |--------|------|----------------|---------|
-| GET | `/api/week/<week>` | `week` — a date in `YYYY-MM-DD` format | JSON **object** `{ week, songs, averages, avgTempo }`. *Source: api/routes.py:L35-L45* |
+| GET | `/api/week/<week>` | `week` — a date in `YYYY-MM-DD` format | JSON **object** `{ week, songs, averages, avgTempo }`. *Source: api/routes.py:L96-L124* |
 
-The requested date is normalized to a Saturday (the chart week) by `get_query_week`. *Source: api/funcs.py:L5-L24* `songs` is an array of `TrackSchema` objects ordered by rank; `averages` contains one entry per aggregated audio feature — **Energy, Danceability, Speechiness, Acousticness, Instrumentalness** — each as `{ feature, mean, full }` where `mean` is `int(feature_mean * 100)` and `full` is always `100`; `avgTempo` is the integer mean tempo. *Source: api/funcs.py:L40-L58*
+The requested date is normalized to a Saturday (the chart week) by `get_query_week`. *Source: api/funcs.py:L5-L41* `songs` is an array of `TrackSchema` objects ordered by rank; `averages` contains one entry per aggregated audio feature — **Energy, Danceability, Speechiness, Acousticness, Instrumentalness** — each as `{ feature, mean, full }` where `mean` is `int(feature_mean * 100)` and `full` is always `100`; `avgTempo` is the integer mean tempo. *Source: api/funcs.py:L74-L105*
 
 ```bash
 curl http://localhost/api/week/2021-01-02
@@ -318,7 +322,7 @@ curl http://localhost/api/week/2021-01-02
 
 | Method | Path | Path parameter | Returns |
 |--------|------|----------------|---------|
-| GET | `/api/artist/<artist>` | `artist` — substring to match | JSON **array** of tracks whose `artist` contains `<artist>` (case-insensitive `LIKE %artist%`), ordered by `week` **descending** (newest first). *Source: api/routes.py:L49-L55* |
+| GET | `/api/artist/<artist>` | `artist` — substring to match | JSON **array** of tracks whose `artist` contains `<artist>` (case-insensitive `LIKE %artist%`), ordered by `week` **descending** (newest first). *Source: api/routes.py:L128-L150* |
 
 ```bash
 curl http://localhost/api/artist/Drake
@@ -350,9 +354,9 @@ curl http://localhost/api/artist/Drake
 
 | Method | Path | Path parameter | Returns |
 |--------|------|----------------|---------|
-| GET | `/api/analysis/<feature>` | `feature` — an audio-feature column (`energy`, `danceability`, `valence`, `liveness`, `speechiness`, `acousticness`, `instrumentalness`, `tempo`) | HTTP **200** with `{ feature, data }`, where `data` is an array of `{ year, value, rolling }`. *Source: api/routes.py:L60-L69* |
+| GET | `/api/analysis/<feature>` | `feature` — an audio-feature column (`energy`, `danceability`, `valence`, `liveness`, `speechiness`, `acousticness`, `instrumentalness`, `tempo`) | HTTP **200** with `{ feature, data }`, where `data` is an array of `{ year, value, rolling }`. *Source: api/routes.py:L155-L182* |
 
-`value` is the annual average of the feature and `rolling` is its **5-year rolling average** (`df[feature].rolling(5).mean()`). Because a 5-period window needs five years of history, the first four years produce no rolling value and are omitted from `data`. *Source: api/funcs.py:L27-L37*
+`value` is the annual average of the feature and `rolling` is its **5-year rolling average** (`df[feature].rolling(5).mean()`). Because a 5-period window needs five years of history, the first four years produce no rolling value and are omitted from `data`. *Source: api/funcs.py:L44-L71*
 
 ```bash
 curl http://localhost/api/analysis/energy
@@ -371,11 +375,11 @@ curl http://localhost/api/analysis/energy
 
 ## Data Models
 
-The backend defines two SQLAlchemy models and two Marshmallow schemas. *Source: api/models.py:L4-L64*
+The backend defines two SQLAlchemy models and two Marshmallow schemas. *Source: api/models.py:L4-L171*
 
 ### `Tracks` (table)
 
-One row per song appearance on a weekly chart. *Source: api/models.py:L4-L37*
+One row per song appearance on a weekly chart. *Source: api/models.py:L4-L89*
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -395,15 +399,15 @@ One row per song appearance on a weekly chart. *Source: api/models.py:L4-L37*
 | `instrumentalness` | Float | Audio feature |
 | `loudness` | Float | Audio feature — decibels |
 
-> **Known quirk (documented, not fixed):** `Tracks.__init__` does **not** accept a `spotify_id` parameter, even though `spotify_id` is a declared column. Rows created through the constructor therefore leave `spotify_id` unset, though the column is still selected and serialized when reading. This behavior is intentional to document and is left unchanged by this documentation task. *Source: api/models.py:L10,L21-L37*
+> **Known quirk (documented, not fixed):** `Tracks.__init__` does **not** accept a `spotify_id` parameter, even though `spotify_id` is a declared column. Rows created through the constructor therefore leave `spotify_id` unset, though the column is still selected and serialized when reading. This behavior is intentional to document and is left unchanged by this documentation task. *Source: api/models.py:L58,L73-L89*
 
 ### `TrackSchema`
 
-Serializes all **15** `Tracks` fields (this **includes** `spotify_id`): `id`, `week`, `rank`, `track`, `artist`, `spotify_id`, `energy`, `danceability`, `valence`, `liveness`, `speechiness`, `acousticness`, `instrumentalness`, `loudness`, `tempo`. *Source: api/models.py:L40-L45*
+Serializes all **15** `Tracks` fields (this **includes** `spotify_id`): `id`, `week`, `rank`, `track`, `artist`, `spotify_id`, `energy`, `danceability`, `valence`, `liveness`, `speechiness`, `acousticness`, `instrumentalness`, `loudness`, `tempo`. *Source: api/models.py:L92-L112*
 
 ### `YearlyAvg` (table)
 
-Precomputed per-year averages used by the analysis endpoint. *Source: api/models.py:L48-L58*
+Precomputed per-year averages used by the analysis endpoint. *Source: api/models.py:L115-L154*
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -420,7 +424,7 @@ Precomputed per-year averages used by the analysis endpoint. *Source: api/models
 
 ### `YearlyAvgSchema`
 
-Serializes **9** fields (**excludes** the `index` primary key): `year`, `energy`, `valence`, `liveness`, `speechiness`, `acousticness`, `danceability`, `instrumentalness`, `tempo`. *Source: api/models.py:L61-L64*
+Serializes **9** fields (**excludes** the `index` primary key): `year`, `energy`, `valence`, `liveness`, `speechiness`, `acousticness`, `danceability`, `instrumentalness`, `tempo`. *Source: api/models.py:L157-L171*
 
 The two tables are independent (there is no enforced foreign-key relationship); `YearlyAvg` is a precomputed aggregate derived from the same underlying chart data as `Tracks`.
 
@@ -457,13 +461,13 @@ erDiagram
     }
 ```
 
-*Entity-reference diagram for `Tracks` and `YearlyAvg`. Source: api/models.py:L4-L64.*
+*Entity-reference diagram for `Tracks` and `YearlyAvg`. Source: api/models.py:L4-L171.*
 
 ## Data Pipeline
 
 The chart data consumed by this application is produced by an **external, out-of-repository** pipeline — treated here as a **prerequisite**, not a component of this repo.
 
-- **Tracks:** A separate script, running weekly, scrapes the Billboard site page and adds each song into the database. *Source: README.md original narrative.*
+- **Tracks:** A separate script, running weekly, scrapes the Billboard site page and adds each song into the database. *Source: original project README (preserved baseline narrative).*
 - **Data:** The weekly script uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to get [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) for each track, used for visualizations.
 
 This scraper/enrichment job is **not** included in this repository and is **not** installed or executed by this project; `hot-stuff` expects the PostgreSQL database to be populated by it. See [Prerequisites](#prerequisites).
@@ -476,7 +480,7 @@ The `Dockerfile` builds the API image from `python:3.11-slim-buster`, installs t
 
 ### Compose topology
 
-`docker-compose.yml` defines two services *(Source: docker-compose.yml)*:
+`docker-compose.yml` defines two services *(Source: docker-compose.yml:L2-L24)*:
 
 - **`api`** — built from `.` (the `Dockerfile`), publishes `80:5000`, and `depends_on` `postgres`. *Source: docker-compose.yml:L3-L13*
 - **`postgres`** — image `postgres:15`, publishes `5432:5432`. *Source: docker-compose.yml:L15-L22*
@@ -496,7 +500,9 @@ graph TB
 
 ### Production consideration — development server caveat
 
-The container command runs `python3 app.py`, which invokes Flask's **built-in development server** via `app.run()`. *Source: app.py:L4* Although `gunicorn` 20.1.0 is pinned in `requirements.txt`, it is **not** used by the container `CMD`. *Source: requirements.txt; Dockerfile:L15* Flask's development server is not intended for production use; a production deployment would typically front the app with a WSGI server such as gunicorn. This is noted as a consideration only — no code or configuration is changed by this documentation.
+The container command runs `python3 app.py`, which invokes Flask's **built-in development server** via `app.run()`. *Source: app.py:L37* Although `gunicorn` 20.1.0 is pinned in `requirements.txt`, it is **not** used by the container `CMD`. *Source: requirements.txt:L7; Dockerfile:L15* Flask's development server is not intended for production use; a production deployment would typically front the app with a WSGI server such as gunicorn. This is noted as a consideration only — no code or configuration is changed by this documentation.
+
+Similarly, the PostgreSQL credentials shipped in `docker-compose.yml` (`postgres` / `postgres`) and the `SQLALCHEMY_DATABASE_URI` in `api/__init__.py` are **development defaults only**. A production deployment must replace them with strong, externally managed secrets (for example via environment variables or a secrets manager) and must not reuse the committed `postgres`/`postgres` values. See [Configuration](#configuration) for the full variable reference. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55*
 
 ## Acknowledgements and License
 

@@ -7,8 +7,8 @@ class Tracks(db.Model):
     Each row records one song's placement on the Billboard Hot 100 for a
     single chart week, together with that track's Spotify audio-feature
     values. Rows are populated by an external, out-of-repository weekly
-    scraper and Spotipy enrichment pipeline (Source: README.md:L15-L17), not
-    by this application.
+    scraper and Spotipy enrichment pipeline (Source: README.md:L468-L473),
+    not by this application.
 
     Attributes:
         id (int): Integer primary key; unique row identifier.
