@@ -7,44 +7,44 @@ class Tracks(db.Model):
     Each row records one song's placement on the Billboard Hot 100 for a
     single chart week, together with that track's Spotify audio-feature
     values. Rows are populated by an external, out-of-repository weekly
-    scraper and Spotipy enrichment pipeline (Source: README.md), not by this
-    application.
+    scraper and Spotipy enrichment pipeline (Source: README.md:L15-L17), not
+    by this application.
 
     Attributes:
         id (int): Integer primary key; unique row identifier.
-            (Source: api/models.py:L5)
+            (Source: api/models.py:L53)
         week (date): The Saturday chart week this entry belongs to.
-            (Source: api/models.py:L6)
+            (Source: api/models.py:L54)
         rank (int): The song's Hot 100 position for that chart week
-            (1 = top). (Source: api/models.py:L7)
-        track (str): Song title. (Source: api/models.py:L8)
-        artist (str): Performing artist name. (Source: api/models.py:L9)
+            (1 = top). (Source: api/models.py:L55)
+        track (str): Song title. (Source: api/models.py:L56)
+        artist (str): Performing artist name. (Source: api/models.py:L57)
         spotify_id (str): Spotify track identifier used for audio-feature
-            lookups. (Source: api/models.py:L10)
-        tempo (float): Audio feature - estimated tempo in BPM.
-            (Source: api/models.py:L11)
+            lookups. (Source: api/models.py:L58)
+        tempo (float): Audio feature value stored in the tempo column.
+            (Source: api/models.py:L59)
         energy (float): Audio feature - perceptual energy/intensity.
-            (Source: api/models.py:L12)
+            (Source: api/models.py:L60)
         danceability (float): Audio feature - danceability measure.
-            (Source: api/models.py:L13)
+            (Source: api/models.py:L61)
         valence (float): Audio feature - musical positiveness.
-            (Source: api/models.py:L14)
+            (Source: api/models.py:L62)
         liveness (float): Audio feature - live-audience presence.
-            (Source: api/models.py:L15)
+            (Source: api/models.py:L63)
         speechiness (float): Audio feature - spoken-word presence.
-            (Source: api/models.py:L16)
+            (Source: api/models.py:L64)
         acousticness (float): Audio feature - acoustic confidence.
-            (Source: api/models.py:L17)
+            (Source: api/models.py:L65)
         instrumentalness (float): Audio feature - vocal-absence likelihood.
-            (Source: api/models.py:L18)
-        loudness (float): Audio feature - overall loudness in decibels (dB).
-            (Source: api/models.py:L19)
+            (Source: api/models.py:L66)
+        loudness (float): Audio feature value stored in the loudness column.
+            (Source: api/models.py:L67)
 
     Note:
         Known, deliberately-unchanged behavior: ``Tracks.__init__``
-        (Source: api/models.py:L21-L37) does NOT accept a ``spotify_id``
+        (Source: api/models.py:L73-L89) does NOT accept a ``spotify_id``
         parameter even though ``spotify_id`` is a declared column
-        (Source: api/models.py:L10). Instances created via this constructor
+        (Source: api/models.py:L58). Instances created via this constructor
         will therefore not have ``spotify_id`` set by the constructor; the
         value can still be assigned directly or populated when the ORM loads
         a row. Documented for awareness and left unchanged per the
@@ -93,7 +93,7 @@ class TrackSchema(ma.Schema):
     """Marshmallow schema serializing a Tracks record to JSON.
 
     Serializes all 15 fields of a :class:`Tracks` row, in the exact order
-    declared in ``Meta.fields`` (Source: api/models.py:L42-L45):
+    declared in ``Meta.fields`` (Source: api/models.py:L109-L112):
     ``id``, ``week``, ``rank``, ``track``, ``artist``, ``spotify_id``,
     ``energy``, ``danceability``, ``valence``, ``liveness``, ``speechiness``,
     ``acousticness``, ``instrumentalness``, ``loudness``, ``tempo``.
@@ -101,7 +101,7 @@ class TrackSchema(ma.Schema):
     Note:
         This schema INCLUDES ``spotify_id`` in its serialized output, in
         contrast with ``Tracks.__init__``, which does not accept or populate
-        it (Source: api/models.py:L21-L37). A ``spotify_id`` assigned
+        it (Source: api/models.py:L73-L89). A ``spotify_id`` assigned
         directly or loaded by the ORM is therefore still exposed by this
         schema's JSON output.
     """
@@ -118,29 +118,29 @@ class YearlyAvg(db.Model):
     Holds one aggregated row per year containing the mean of each Spotify
     audio feature across that year's charting tracks. This table backs the
     ``/api/analysis/<feature>`` endpoint's yearly series and its rolling
-    average computation (Source: api/routes.py, api/funcs.py).
+    average computation (Source: api/routes.py:L155-L182, api/funcs.py:L44-L71).
 
     Attributes:
         index (int): Integer primary key; unique row identifier.
-            (Source: api/models.py:L49)
+            (Source: api/models.py:L145)
         year (str): The calendar year the averages apply to.
-            (Source: api/models.py:L50)
+            (Source: api/models.py:L146)
         energy (float): Audio feature - mean energy for the year.
-            (Source: api/models.py:L51)
+            (Source: api/models.py:L147)
         danceability (float): Audio feature - mean danceability for the year.
-            (Source: api/models.py:L52)
+            (Source: api/models.py:L148)
         valence (float): Audio feature - mean valence for the year.
-            (Source: api/models.py:L53)
+            (Source: api/models.py:L149)
         liveness (float): Audio feature - mean liveness for the year.
-            (Source: api/models.py:L54)
+            (Source: api/models.py:L150)
         speechiness (float): Audio feature - mean speechiness for the year.
-            (Source: api/models.py:L55)
+            (Source: api/models.py:L151)
         acousticness (float): Audio feature - mean acousticness for the year.
-            (Source: api/models.py:L56)
+            (Source: api/models.py:L152)
         instrumentalness (float): Audio feature - mean instrumentalness.
-            (Source: api/models.py:L57)
+            (Source: api/models.py:L153)
         tempo (float): Audio feature - mean tempo for the year.
-            (Source: api/models.py:L58)
+            (Source: api/models.py:L154)
     """
     index = db.Column(db.Integer, primary_key=True)
     year = db.Column(db.String)
@@ -158,13 +158,13 @@ class YearlyAvgSchema(ma.Schema):
     """Marshmallow schema serializing a YearlyAvg record to JSON.
 
     Serializes 9 fields, in the exact order declared in ``Meta.fields``
-    (Source: api/models.py:L63-L64): ``year``, ``energy``, ``valence``,
+    (Source: api/models.py:L170-L171): ``year``, ``energy``, ``valence``,
     ``liveness``, ``speechiness``, ``acousticness``, ``danceability``,
     ``instrumentalness``, ``tempo``.
 
     Note:
         This schema EXCLUDES the ``index`` primary key
-        (Source: api/models.py:L49) from its serialized JSON output.
+        (Source: api/models.py:L145) from its serialized JSON output.
     """
     class Meta:
         fields = ('year', 'energy', 'valence', 'liveness', 'speechiness', \

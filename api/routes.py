@@ -1,24 +1,24 @@
 """HTTP route layer defining the hot-stuff REST API contract.
 
 This module registers every Flask route against the shared application object
-``app`` (imported from the ``api`` package; Source: api/__init__.py). The app
-uses a single-origin design: one Flask process serves the compiled React
+``app`` (imported from the ``api`` package; Source: api/__init__.py:L50). The
+app uses a single-origin design: one Flask process serves the compiled React
 single-page application (SPA) at ``/`` and the JSON API under ``/api/*``.
 
-Three module-level Marshmallow schema singletons are instantiated once and
-reused for serialization by the route handlers (Source: api/routes.py:L7-L9):
+Three module-level Marshmallow schema singletons are instantiated once
+(Source: api/routes.py:L29-L31). ``track_schema`` is declared but unused:
 
-    * ``track_schema``  -- serialize a single track (``TrackSchema()``).
-    * ``tracks_schema`` -- serialize many tracks (``TrackSchema(many=True)``).
-    * ``yearly_schema`` -- serialize many yearly audio-feature averages
-      (``YearlyAvgSchema(many=True)``).
+    * ``track_schema``  -- single track (``TrackSchema()``); not used by a handler.
+    * ``tracks_schema`` -- many tracks (``TrackSchema(many=True)``); used by handlers.
+    * ``yearly_schema`` -- many yearly audio-feature averages
+      (``YearlyAvgSchema(many=True)``); used by the analysis handler.
 
 The handlers normalize chart weeks, query Billboard Hot 100 chart data, and
 compute weekly aggregates and rolling averages. This module depends on
 ``api.models`` for the ORM models/schemas and on ``api.funcs`` for the
 chart-week normalization, weekly-aggregation, and rolling-average helpers.
 
-Source: api/routes.py:L1-L69
+Source: api/routes.py:L1-L182
 """
 from flask import redirect, request, jsonify
 from api.models import Tracks, TrackSchema, YearlyAvg, YearlyAvgSchema
@@ -44,7 +44,7 @@ def index():
         build folder (an HTML response), produced by
         ``app.send_static_file('index.html')``.
 
-    Source: api/routes.py:L13-L15
+    Source: api/routes.py:L35-L49
     """
     return app.send_static_file('index.html')
 
@@ -60,9 +60,9 @@ def home():
     Returns:
         flask.Response: A ``302`` redirect to ``week/{currentWeek}``, where
         ``currentWeek = get_query_week(None)`` -- today normalized to its
-        Saturday chart week (Source: api/funcs.py).
+        Saturday chart week (Source: api/funcs.py:L5-L41).
 
-    Source: api/routes.py:L19-L22
+    Source: api/routes.py:L53-L68
     """
     currentWeek = get_query_week(None)
     return redirect(f'week/{currentWeek}')
@@ -84,7 +84,7 @@ def get_track_by_id(spotify_id):
         flask.Response: A JSON array of track objects matching ``spotify_id``,
         ordered by ``rank`` and serialized with ``TrackSchema(many=True)``.
 
-    Source: api/routes.py:L26-L31
+    Source: api/routes.py:L72-L92
     """
     resultObj = Tracks.query.filter_by(spotify_id=spotify_id).order_by(
         Tracks.rank).all()
@@ -102,16 +102,16 @@ def get_tracks_by_week(week):
 
     Args:
         week (str): A ``YYYY-MM-DD`` date; normalized to its Saturday chart
-            week via ``get_query_week`` (Source: api/funcs.py).
+            week via ``get_query_week`` (Source: api/funcs.py:L5-L41).
 
     Returns:
         flask.Response: A JSON object of the form
         ``{"week": <normalized>, "songs": [...TrackSchema...],
         "averages": [{"feature", "mean", "full"}], "avgTempo": <int>}``,
         where ``averages`` and ``avgTempo`` are produced by
-        ``get_weekly_data`` (Source: api/funcs.py).
+        ``get_weekly_data`` (Source: api/funcs.py:L74-L105).
 
-    Source: api/routes.py:L35-L45
+    Source: api/routes.py:L96-L124
     """
     week = get_query_week(week)
     returnObj = {'week': week}
@@ -141,7 +141,7 @@ def get_tracks_by_artist(artist):
         descending (newest chart week first), serialized with
         ``TrackSchema(many=True)``.
 
-    Source: api/routes.py:L49-L55
+    Source: api/routes.py:L128-L150
     """
     resultObj = Tracks.query.filter(
         func.lower(Tracks.artist).like(func.lower(f'%{artist}%'))).order_by(
@@ -168,9 +168,9 @@ def get_avg_feature(feature):
         tuple: HTTP ``200`` with a JSON object of the form
         ``{"feature": <feature>, "data": [{"year", "value", "rolling"}]}``,
         where ``rolling`` is the 5-period rolling average computed by
-        ``get_rolling_avg`` (Source: api/funcs.py:L27-L37).
+        ``get_rolling_avg`` (Source: api/funcs.py:L44-L71).
 
-    Source: api/routes.py:L60-L69
+    Source: api/routes.py:L155-L182
     """
     returnObj = {}
     resultObj = YearlyAvg.query.with_entities(YearlyAvg.year,
