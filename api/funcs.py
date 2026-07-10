@@ -27,7 +27,11 @@ def get_query_week(date):
     # the previous Saturday (next_sat - 7 days), then snap the input date to its
     # published chart week -- return the LAST Saturday when the weekday is
     # Sunday/Monday/Tuesday (weekday in [6, 0, 1]) OR Wednesday (weekday == 2)
-    # before 10:00; otherwise return the NEXT Saturday.
+    # before 10:00; otherwise return the NEXT Saturday. The weekday is derived
+    # from the normalized `date` argument, but the "before 10:00" cutoff is
+    # compared against the SERVER's current wall-clock time via
+    # datetime.now().time() evaluated at call time -- NOT a time component of
+    # `date` (strptime parses only YYYY-MM-DD, so `date` carries no time-of-day).
     if date_weekday in [
             6, 0, 1
     ] or (date_weekday == 2 and datetime.now().time() <
@@ -51,12 +55,15 @@ def get_rolling_avg(data):
 
     feature = [i for i in data[0].keys() if i != 'year'][0]
     df = pd.DataFrame(data)
-    # Authoritative 5-period rolling average: a 5-row rolling mean over the
-    # single feature column (matches the README's corrected "5-year" wording).
+    # Authoritative 5-period rolling average: a 5-row rolling mean computed over
+    # the single audio-feature column (a 5-record window across the yearly rows).
     df['rolling'] = df[feature].rolling(5).mean()
-    # Transform: rename the single feature column to 'value', keep the added
-    # 'rolling' column, convert NaNs to None, then drop the leading rows where
-    # 'rolling' is NaN (the initial 4, before the 5-row window fills).
+    # Transform sequence: apply a not-null mask over the frame, then rename the
+    # single feature column to 'value' and serialize the rows to records. The
+    # not-null mask does NOT reliably null the leading rolling values -- numeric
+    # columns keep their float NaN -- so the final list comprehension is what
+    # actually drops the initial 4 unfilled rows by testing whether each
+    # serialized 'rolling' value is still "nan" (str(i["rolling"]) != "nan").
     df = df.where(pd.notnull(df), None)
     df = df.rename(columns={feature: 'value'})
     d = df.to_dict(orient='records')
