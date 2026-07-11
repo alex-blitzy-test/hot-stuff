@@ -34,7 +34,11 @@ The first number one song of the Billboard Hot 100 was "Poor Little Fool" by Ric
 
 ### What this app does
 
-End to end, `hot-stuff` turns weekly chart snapshots into a browsable, analyzable dataset. A separate weekly job scrapes the Billboard site and stores each song, then enriches every track with [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) via the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library (Source: README.md, "Data Pipeline" below). The Flask API then serves that data as JSON — letting you page through a given chart week, search every appearance of an artist, look up a single track by its Spotify ID, and compute yearly averages with a rolling average for any audio feature (Source: api/routes.py:L38-L201). The React front end renders these responses as interactive [amCharts](https://www.amcharts.com/) visualizations.
+End to end, `hot-stuff` turns weekly chart snapshots into a browsable, analyzable dataset. A separate weekly job scrapes the Billboard site and stores each song, then enriches every track with [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) via the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library (Source: README.md:L521, README.md:L523). The Flask API then serves that data as JSON — letting you page through a given chart week, search every appearance of an artist, look up a single track by its Spotify ID, and compute yearly averages with a rolling average for any audio feature (Source: api/routes.py:L38-L201). The React front end renders these responses as interactive [amCharts](https://www.amcharts.com/) visualizations.
+
+### A note on scope: "server.js" and "JSDoc"
+
+This repository contains no `server.js` file and is not a Node.js server project. The backend "server" is written in **Python with the Flask framework**: its entry point is `app.py`, and its application package is `api/` (`api/__init__.py`, `api/routes.py`, `api/models.py`, and `api/funcs.py`) (Source: app.py:L33-L41, api/__init__.py:L54-L87). The request to "add JSDoc comments to `server.js` functions" was therefore fulfilled in the language-appropriate way: the backend functions and classes are documented with **Google-style, PEP 257-compatible Python docstrings** (the direct equivalent of JSDoc's `@param`, `@returns`, and `@throws` tags) rather than with JSDoc. The only JavaScript in the repository is the React single-page application under `frontend/src/` (Source: frontend/package.json:L12-L15); that is a client, not a server, so it was intentionally not treated as the "server" target and received no JSDoc.
 
 ## Features
 
@@ -142,7 +146,7 @@ There are two supported ways to run the app: the containerized path (Docker Comp
 
 - **For the container path:** Docker and Docker Compose.
 - **For local development:** Python 3.11 (matching the container runtime, Source: Dockerfile:L1) and Node.js with npm (for building the React front end, Source: frontend/package.json:L19-L24).
-- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md, "Data Pipeline" below). **This repository expects a pre-populated database and does NOT include the ingestion script.** With an empty database the API will return empty results; load data externally before expecting meaningful responses.
+- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md:L521, README.md:L523). **This repository expects a pre-populated database and does NOT include the ingestion script.** With an empty database the API will return empty results; load data externally before expecting meaningful responses.
 
 ### Run with Docker Compose
 
@@ -255,7 +259,7 @@ curl http://localhost/
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>top-100</title>
+    <title>Hot Stuff</title>
   </head>
   <body>
     <div id="root"></div>
@@ -266,7 +270,7 @@ curl http://localhost/
 
 ### `GET /api/`
 
-The JSON API root issues a **302 redirect** to `week/{currentWeek}`, where `currentWeek` is `get_query_week(None)` — today's date normalized to its Saturday chart week (Source: api/routes.py:L57-L74, api/funcs.py:L5-L39).
+The JSON API root issues a **302 redirect** to `week/{currentWeek}`, where `currentWeek` is `get_query_week(None)` — today's date normalized to its Saturday chart week (Source: api/routes.py:L57-L74, api/funcs.py:L5-L39). Because the handler returns `redirect(f'week/{currentWeek}')`, the raw `Location` header is the **relative** target `week/<currentWeek>`, not an absolute `/api/...` path (Source: api/routes.py:L74); a browser resolves that relative redirect against the request path `/api/`, arriving at `/api/week/<currentWeek>`.
 
 ```bash
 curl -i http://localhost/api/
@@ -274,7 +278,7 @@ curl -i http://localhost/api/
 
 ```http
 HTTP/1.1 302 FOUND
-Location: /api/week/2021-01-02
+Location: week/2021-01-02
 ```
 
 ### `GET /api/track/<spotify_id>`
@@ -473,7 +477,7 @@ One row holds the mean of every tracked audio feature across a given year. This 
 
 Serializes a `YearlyAvg` record to JSON, declaring **9 fields** via `Meta.fields`: `year`, `energy`, `valence`, `liveness`, `speechiness`, `acousticness`, `danceability`, `instrumentalness`, `tempo` (Source: api/models.py:L179-L181). It **excludes** the `index` primary key; only the `year` label and the eight audio-feature averages are exposed.
 
-The two tables are independent — there is no foreign-key relationship between them.
+The two tables are independent — there is no foreign-key relationship between them (Source: api/models.py:L52-L66, api/models.py:L149-L158).
 
 ```mermaid
 erDiagram
@@ -514,7 +518,7 @@ erDiagram
 
 The database is populated by an **external, out-of-repository** process — it is a prerequisite for the app, not part of this repository (assumption A4).
 
-**Tracks:** There is a separate script, running weekly, which scrapes the Billboard site page and adds each song into the database (Source: README.md, "Overview" above).
+**Tracks:** There is a separate script, running weekly, which scrapes the Billboard site page and adds each song into the database (Source: preserved verbatim from the original project README).
 
 **Data:** The weekly script uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to get [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) for each track, used for visualizations.
 
