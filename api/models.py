@@ -90,11 +90,17 @@ class Tracks(db.Model):
 class TrackSchema(ma.Schema):
     """Marshmallow schema serializing a Tracks record to JSON.
 
-    Serializes all 15 fields of :class:`Tracks` in the exact order declared
-    by ``Meta.fields``: ``id``, ``week``, ``rank``, ``track``, ``artist``,
-    ``spotify_id``, ``energy``, ``danceability``, ``valence``, ``liveness``,
-    ``speechiness``, ``acousticness``, ``instrumentalness``, ``loudness``,
-    ``tempo``. (Source: api/models.py:L106-L110)
+    Declares all 15 fields of :class:`Tracks` via ``Meta.fields``. In
+    ``Meta.fields`` declaration order the fields are ``id``, ``week``,
+    ``rank``, ``track``, ``artist``, ``spotify_id``, ``energy``,
+    ``danceability``, ``valence``, ``liveness``, ``speechiness``,
+    ``acousticness``, ``instrumentalness``, ``loudness``, ``tempo``.
+    Serialized JSON key order is not guaranteed to match this declaration
+    order: ``Meta.ordered`` is not set (so marshmallow ``dump()`` key order is
+    unstable across processes) and Flask's ``jsonify`` sorts keys
+    alphabetically by default (``JSON_SORT_KEYS=True``); clients therefore
+    access fields by name, not by position.
+    (Source: api/models.py:L112-L116)
 
     Note:
         This schema INCLUDES ``spotify_id`` in its serialized output, in
@@ -116,29 +122,29 @@ class YearlyAvg(db.Model):
     Each row holds the mean of every tracked Spotify audio feature across a
     given year. This table backs the ``/api/analysis/<feature>`` endpoint's
     yearly series and its rolling average computation.
-    (Source: api/models.py:L113-L152)
+    (Source: api/models.py:L119-L158)
 
     Attributes:
         index (Integer): Primary key; unique row identifier.
-            (Source: api/models.py:L143)
-        year (String): The calendar year the averages describe.
-            (Source: api/models.py:L144)
-        energy (Float): Per-year mean of the energy audio feature.
-            (Source: api/models.py:L145)
-        danceability (Float): Per-year mean of the danceability audio
-            feature. (Source: api/models.py:L146)
-        valence (Float): Per-year mean of the valence audio feature.
-            (Source: api/models.py:L147)
-        liveness (Float): Per-year mean of the liveness audio feature.
-            (Source: api/models.py:L148)
-        speechiness (Float): Per-year mean of the speechiness audio feature.
             (Source: api/models.py:L149)
+        year (String): The calendar year the averages describe.
+            (Source: api/models.py:L150)
+        energy (Float): Per-year mean of the energy audio feature.
+            (Source: api/models.py:L151)
+        danceability (Float): Per-year mean of the danceability audio
+            feature. (Source: api/models.py:L152)
+        valence (Float): Per-year mean of the valence audio feature.
+            (Source: api/models.py:L153)
+        liveness (Float): Per-year mean of the liveness audio feature.
+            (Source: api/models.py:L154)
+        speechiness (Float): Per-year mean of the speechiness audio feature.
+            (Source: api/models.py:L155)
         acousticness (Float): Per-year mean of the acousticness audio
-            feature. (Source: api/models.py:L150)
+            feature. (Source: api/models.py:L156)
         instrumentalness (Float): Per-year mean of the instrumentalness
-            audio feature. (Source: api/models.py:L151)
+            audio feature. (Source: api/models.py:L157)
         tempo (Float): Per-year mean of the tempo audio feature.
-            (Source: api/models.py:L152)
+            (Source: api/models.py:L158)
     """
     index = db.Column(db.Integer, primary_key=True)
     year = db.Column(db.String)
@@ -155,15 +161,20 @@ class YearlyAvg(db.Model):
 class YearlyAvgSchema(ma.Schema):
     """Marshmallow schema serializing a YearlyAvg record to JSON.
 
-    Serializes 9 fields in the exact order declared by ``Meta.fields``:
-    ``year``, ``energy``, ``valence``, ``liveness``, ``speechiness``,
-    ``acousticness``, ``danceability``, ``instrumentalness``, ``tempo``.
-    (Source: api/models.py:L168-L170)
+    Declares 9 fields via ``Meta.fields``. In ``Meta.fields`` declaration
+    order the fields are ``year``, ``energy``, ``valence``, ``liveness``,
+    ``speechiness``, ``acousticness``, ``danceability``, ``instrumentalness``,
+    ``tempo``. Serialized JSON key order is not guaranteed to match this
+    declaration order: ``Meta.ordered`` is not set (so marshmallow ``dump()``
+    key order is unstable across processes) and Flask's ``jsonify`` sorts keys
+    alphabetically by default (``JSON_SORT_KEYS=True``); clients therefore
+    access fields by name, not by position.
+    (Source: api/models.py:L179-L181)
 
     Note:
         This schema EXCLUDES the ``index`` primary key from its serialized
         output; only the ``year`` label and the eight audio-feature averages
-        are exposed. (Source: api/models.py:L143, L168-L170)
+        are exposed. (Source: api/models.py:L149, L179-L181)
     """
     class Meta:
         fields = ('year', 'energy', 'valence', 'liveness', 'speechiness', \
