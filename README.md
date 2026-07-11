@@ -36,7 +36,7 @@ The first number one song of the Billboard Hot 100 was "Poor Little Fool" by Ric
 
 ### What this app does
 
-End to end, `hot-stuff` turns raw weekly chart appearances into browsable, analyzable data. A separate weekly job scrapes the Billboard site, stores each ranked song, and uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to attach [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) (energy, danceability, valence, and more) to every track. *Source: original project README (preserved baseline narrative); api/models.py:L4-L89* The Flask backend then exposes this data as a JSON API for browsing individual **chart weeks**, searching by artist, looking up a track by its Spotify ID, and analyzing how a given **audio feature** trends year over year (including a **rolling average**). *Source: api/routes.py:L35-L182* The React front end consumes that API and renders interactive visualizations.
+End to end, `hot-stuff` turns raw weekly chart appearances into browsable, analyzable data. A separate weekly job scrapes the Billboard site, stores each ranked song, and uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to attach [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) (energy, danceability, valence, and more) to every track. *Source: api/models.py:L4-L89* The Flask backend then exposes this data as a JSON API for browsing individual **chart weeks**, searching by artist, looking up a track by its Spotify ID, and analyzing how a given **audio feature** trends year over year (including a **rolling average**). *Source: api/routes.py:L35-L182* The React front end consumes that API and renders interactive visualizations.
 
 ## Features
 
@@ -96,7 +96,7 @@ graph LR
     F -->|serves static build| U
 ```
 
-*System-context diagram. Reflects Source: `api/__init__.py` and `docker-compose.yml`.*
+*System-context diagram. Source: api/__init__.py:L48-L68; docker-compose.yml:L2-L24.*
 
 The sequence below traces a request to `GET /api/week/<week>`, showing how the requested week is normalized to a Saturday and how the per-week aggregation is produced. *Source: api/routes.py:L96-L124; api/funcs.py:L5-L41,L74-L105*
 
@@ -127,11 +127,11 @@ hot-stuff/
 │   ├── src/              # React source (components: about, navigation, tracks, trends; styles)
 │   ├── public/           # Static public assets
 │   ├── build/            # Compiled production build served by Flask at "/" (Source: api/__init__.py:L50)
-│   └── package.json      # Frontend dependencies + scripts (Source: frontend/package.json)
-├── requirements.txt      # Python dependencies (Source: requirements.txt)
-├── Dockerfile            # API image: python:3.11-slim-buster (Source: Dockerfile)
-├── docker-compose.yml    # api + postgres:15 services (Source: docker-compose.yml)
-└── .flaskenv             # FLASK_APP / FLASK_ENV for `flask run` (Source: .flaskenv)
+│   └── package.json      # Frontend dependencies + scripts (Source: frontend/package.json:L1-L45)
+├── requirements.txt      # Python dependencies (Source: requirements.txt:L1-L23)
+├── Dockerfile            # API image: python:3.11-slim-buster (Source: Dockerfile:L1-L15)
+├── docker-compose.yml    # api + postgres:15 services (Source: docker-compose.yml:L1-L26)
+└── .flaskenv             # FLASK_APP / FLASK_ENV for `flask run` (Source: .flaskenv:L1-L2)
 ```
 
 ## Getting Started
@@ -139,8 +139,8 @@ hot-stuff/
 ### Prerequisites
 
 - **Docker & Docker Compose** — for the containerized path, or
-- **Python 3.11** and **Node.js / npm** — for local development. *Source: Dockerfile:L1; frontend/package.json*
-- **A pre-populated PostgreSQL database.** This repository expects chart data to already be loaded. The database is filled by an **external, out-of-repository** weekly scraper plus a Spotipy audio-feature enrichment pipeline; that ingestion script is **not** part of this repo and is **not** installed or run by this project. *Source: original project README (preserved baseline narrative); see [Data Pipeline](#data-pipeline).* See [Data Pipeline](#data-pipeline) for details. Without externally loaded data, the API will return empty results (and endpoints that aggregate over rows, such as `/api/week/<week>` and `/api/analysis/<feature>`, require populated tables).
+- **Python 3.11** and **Node.js / npm** — for local development. *Source: Dockerfile:L1; frontend/package.json:L1-L45*
+- **A pre-populated PostgreSQL database.** This repository expects chart data to already be loaded. The database is filled by an **external, out-of-repository** weekly scraper plus a Spotipy audio-feature enrichment pipeline; that ingestion script is **not** part of this repo and is **not** installed or run by this project. *Source: api/__init__.py:L55; docker-compose.yml:L15-L24.* See [Data Pipeline](#data-pipeline) for details. Without externally loaded data, the API will return empty results (and endpoints that aggregate over rows, such as `/api/week/<week>` and `/api/analysis/<feature>`, require populated tables).
 
 ### Run with Docker Compose
 
@@ -197,13 +197,16 @@ The frontend `package.json` also defines a convenience script, `start-api`, that
 
 ## Configuration
 
-All runtime configuration is supplied through environment variables and Flask config keys.
+Runtime configuration comes from **two distinct sources**, and the distinction matters when changing credentials for production:
+
+- **Environment variables** — `FLASK_APP` and `FLASK_ENV` (loaded from `.flaskenv`), plus the Compose-only `POSTGRES_*` and `NODE_OPTIONS`. *Source: .flaskenv:L1-L2; docker-compose.yml:L8-L22*
+- **Hardcoded Flask config keys set in source** — `SQLALCHEMY_DATABASE_URI` and `SQLALCHEMY_TRACK_MODIFICATIONS` are assigned directly in `api/__init__.py`. They are **not** read from the environment (the app does not call `os.environ` / `from_prefixed_env` for them), so setting an `SQLALCHEMY_DATABASE_URI` environment variable has **no effect** — the value in the table below is always used until the source is changed. *Source: api/__init__.py:L55,L57-L58*
 
 | Variable | Value / Example | Where set | Purpose |
 |----------|-----------------|-----------|---------|
 | `FLASK_APP` | `app.py` | `.flaskenv` | Module the Flask CLI loads for `flask run`. *Source: .flaskenv:L1* |
 | `FLASK_ENV` | `development` | `.flaskenv` | Enables Flask **debug mode** — the interactive Werkzeug debugger and the auto-reloader. This applies **not only to `flask run` but also to `python3 app.py` and `docker-compose up`**, because `app.run()` defaults to `load_dotenv=True` and therefore loads the committed `.flaskenv`. Debug mode is **unsafe to expose beyond localhost** — see the debug-mode security caveat under [Deployment](#deployment). *Source: .flaskenv:L2; app.py:L37; requirements.txt:L18* |
-| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | `api/__init__.py:L57` | Database connection string. The host `postgres` is the Docker Compose **service name**. *Source: api/__init__.py:L55,L57* |
+| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | `api/__init__.py:L57` (**hardcoded in source**) | Database connection string, **hardcoded in source** — **not** read from an OS environment variable. The host `postgres` is the Docker Compose **service name**. Setting an `SQLALCHEMY_DATABASE_URI` environment variable has **no effect**; changing the connection requires editing `api/__init__.py`. *Source: api/__init__.py:L55,L57* |
 | `SQLALCHEMY_TRACK_MODIFICATIONS` | `False` | `api/__init__.py:L58` | Disables the SQLAlchemy modification-tracking overhead. *Source: api/__init__.py:L58* |
 | `POSTGRES_USER` | `postgres` | `docker-compose.yml:L20` | PostgreSQL user for the container. *Source: docker-compose.yml:L20* |
 | `POSTGRES_PASSWORD` | `postgres` | `docker-compose.yml:L21` | PostgreSQL password for the container. *Source: docker-compose.yml:L21* |
@@ -212,11 +215,20 @@ All runtime configuration is supplied through environment variables and Flask co
 
 **Published ports:** `api` maps host `80` → container `5000` *(Source: docker-compose.yml:L11)*; `postgres` maps `5432` → `5432` *(Source: docker-compose.yml:L18)*.
 
-> **Security — development credentials only.** The database values documented above — `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=db`, and the `SQLALCHEMY_DATABASE_URI` connection string `postgresql://postgres:postgres@postgres/db` — are **local development defaults committed to this repository for convenience**. They are **not** safe for production. A production deployment **must** supply strong, unique credentials through environment variables or a dedicated secrets manager, **must not** reuse the `postgres`/`postgres` values, and should avoid committing real secrets to version control. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55*
+> **Security — development credentials only.** The database values documented above — `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=db`, and the `SQLALCHEMY_DATABASE_URI` connection string `postgresql://postgres:postgres@postgres/db` — are **local development defaults committed to this repository for convenience**. They are **not** safe for production. Because the application's connection string is **hardcoded** in `api/__init__.py` and is **not** read from the environment, rotating these credentials currently requires a **source/configuration change**: edit the hardcoded `dbURL` in `api/__init__.py` and keep the matching `POSTGRES_*` values in `docker-compose.yml` in sync. The recommended production pattern — supplying strong, unique credentials via environment variables or a dedicated secrets manager — first requires modifying the code to read the URI from the environment, which is a source change and therefore **out of scope for this documentation-only task**. In all cases, do **not** reuse the `postgres`/`postgres` values and do **not** commit real secrets to version control. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55,L57*
 
 ## API Reference
 
-The API is written in Python with the Flask framework. *Source: `api/__init__.py`:L42-L50* Base URL is `http://localhost` when running via Docker Compose (host port `80`), or `http://localhost:5000` when running Flask directly. All six routes are documented below. Example JSON payloads are **illustrative** (synthesized from the handler and schema definitions); there is no bundled test dataset.
+The API is written in Python with the Flask framework. *Source: api/__init__.py:L42-L50* Base URL is `http://localhost` when running via Docker Compose (host port `80`), or `http://localhost:5000` when running Flask directly. All six routes are documented below. Example JSON payloads are **illustrative** (synthesized from the handler and schema definitions); there is no bundled test dataset.
+
+### Error handling and input validation
+
+The route handlers perform **no validation or sanitization of path parameters**, and there is **no application-level error handler** — invalid input propagates as an unhandled exception, which Flask turns into an **HTTP 500**. Two paths are notable:
+
+- **`GET /api/week/<week>`** — a value that is not a `YYYY-MM-DD` date (for example `GET /api/week/not-a-date`, or a value containing a NUL/control byte such as `2021-01-02%00`) reaches `datetime.strptime` inside `get_query_week()`, which raises `ValueError` **before any database query runs**. *Source: api/routes.py:L116; api/funcs.py:L18*
+- **`GET /api/analysis/<feature>`** — a `feature` that is not a column of `YearlyAvg` (for example `GET /api/analysis/notacolumn`) reaches `getattr(YearlyAvg, feature)`, which raises `AttributeError` **before any query runs**. *Source: api/routes.py:L177*
+
+No controlled `4xx` JSON error response is implemented for these cases; the current behavior is a bare **500**. In the **documented development configuration**, debug mode is on (see the debug-mode caveat under [Deployment](#deployment)), so the 500 is rendered as the **interactive Werkzeug debugger traceback page, which discloses source-file paths and application internals** — a **development-only** exposure. With debug mode disabled (the required posture before any non-local exposure), Flask instead returns a generic 500 with no traceback. Adding input validation or structured `4xx` handling would be a **source-logic change** and is therefore **out of scope for this documentation-only task**; this note documents the current behavior without changing it. *Source: .flaskenv:L2; app.py:L37*
 
 ### `GET /` — serve the React SPA
 
@@ -358,6 +370,8 @@ curl http://localhost/api/artist/Drake
 ]
 ```
 
+> **Search semantics — SQL `LIKE` wildcards are not escaped.** The handler builds a case-insensitive substring match by lowercasing both sides and wrapping the input as `%<artist>%`; it does **not** escape SQL `LIKE` metacharacters. As a result, `%` and `_` in the path are treated as **wildcards**: `GET /api/artist/%25` (a literal `%`) matches **every** row and returns all chart appearances, and `_` matches any single character. This affects only which rows the **read-only** search returns — no data is created, modified, or deleted. Escaping the wildcards to force literal matching would be a **source-logic change** and is **out of scope for this documentation-only task**; this note documents the current search behavior. *Source: api/routes.py:L129-L150*
+
 ### `GET /api/analysis/<feature>` — yearly average and rolling average for a feature
 
 | Method | Path | Path parameter | Returns |
@@ -475,7 +489,7 @@ erDiagram
 
 The chart data consumed by this application is produced by an **external, out-of-repository** pipeline — treated here as a **prerequisite**, not a component of this repo.
 
-- **Tracks:** A separate script, running weekly, scrapes the Billboard site page and adds each song into the database. *Source: original project README (preserved baseline narrative).*
+- **Tracks:** A separate script, running weekly, scrapes the Billboard site page and adds each song into the database. *Source: api/models.py:L4-L89.*
 - **Data:** The weekly script uses the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library to get [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) for each track, used for visualizations.
 
 This scraper/enrichment job is **not** included in this repository and is **not** installed or executed by this project; `hot-stuff` expects the PostgreSQL database to be populated by it. See [Prerequisites](#prerequisites).
@@ -485,6 +499,8 @@ This scraper/enrichment job is **not** included in this repository and is **not*
 ### Docker image
 
 The `Dockerfile` builds the API image from `python:3.11-slim-buster`, installs the `libpq-dev` and `gcc` system packages, installs Python dependencies from `requirements.txt`, copies the project, exposes port `5000`, and starts the app with `CMD ["python3", "app.py"]`. *Source: Dockerfile:L1-L15*
+
+> **Note — Docker must run Linux containers.** Both images are **Linux-based** (`python:3.11-slim-buster` and `postgres:15`), so the Docker daemon must be in **Linux-container mode** (Docker Desktop: *Switch to Linux containers…*; Docker Engine on Linux uses this by default). On a daemon running in **Windows-container mode**, `docker build` / `docker compose up` cannot pull the Linux base image and fail with `no matching manifest for windows/amd64`. Use Docker Compose v2 (`docker compose`) or v1 (`docker-compose`). This is an environment requirement, not a defect in the project. *Source: Dockerfile:L1; docker-compose.yml:L15-L22*
 
 ### Compose topology
 
@@ -504,7 +520,7 @@ graph TB
     Client -->|http localhost 80| API
 ```
 
-*Compose deployment topology. Source: docker-compose.yml; Dockerfile.*
+*Compose deployment topology. Source: docker-compose.yml:L2-L24; Dockerfile:L1-L15.*
 
 ### Production considerations — development server, debug mode, and hardening
 
@@ -515,13 +531,13 @@ graph TB
 **Hardening checklist before exposing beyond localhost.** The current posture is development-oriented; the items below are documented here (they are not changed by this documentation):
 
 - **Disable debug mode / the interactive debugger** — the most important item; see the caveat above. It removes the traceback disclosure and the code-execution console. *Source: .flaskenv:L2; app.py:L37*
-- **Rotate credentials** — replace the committed development database credentials with strong, externally managed secrets (detailed below and in [Configuration](#configuration)). *Source: docker-compose.yml:L19-L22; api/__init__.py:L55*
+- **Rotate credentials** — replace the committed development database credentials with strong, unique secrets. Note that the connection string is **hardcoded** in `api/__init__.py` (not read from the environment), so this is a **source/configuration change**: edit the hardcoded `dbURL` and the matching `docker-compose.yml` `POSTGRES_*` values (and, to manage them externally, first modify the code to read the URI from an environment variable or secrets manager). Details below and in [Configuration](#configuration). *Source: docker-compose.yml:L19-L22; api/__init__.py:L55,L57*
 - **Restrict CORS** — the app calls `CORS(app)`, which sends `Access-Control-Allow-Origin: *` (any origin) on every response; restrict this to trusted origins for production. *Source: api/__init__.py:L51*
 - **Restrict the network binding and published ports** — the server binds `0.0.0.0` (all interfaces) *(Source: app.py:L37)*, and Compose publishes both the app (`80:5000`) and PostgreSQL (`5432:5432`) *(Source: docker-compose.yml:L10-L11,L17-L18)*; firewall or narrow these, and in particular do not expose the database port publicly.
-- **Update the base image and dependencies** — the base image `python:3.11-slim-buster` is built on Debian 10 "Buster", which has reached end-of-life, and several pinned dependencies carry known CVEs; rebuild on a supported base image and review dependency versions before production use. *Source: Dockerfile:L1; requirements.txt* (Upgrading the base image or dependencies is out of scope for this documentation-only task.)
+- **Update the base image and dependencies** — the base image `python:3.11-slim-buster` is built on **Debian 10 "Buster", which has reached end-of-life** (the OS no longer receives security updates), and the pinned Python and npm dependencies carry **numerous known CVEs**. A security scan performed during QA review reported, for the versions pinned here: `pip-audit` — 26 vulnerabilities across 7 Python packages; `npm audit` — 208 advisories for the frontend lockfile (21 critical, 62 high, 118 moderate, 7 low); and Trivy against `python:3.11-slim-buster` — 134 OS-package vulnerabilities (2 critical, 43 high) together with an end-of-life-OS warning. (These counts reflect the advisory databases at scan time and will change as advisories are updated.) **As shipped, this stack is therefore not production-ready**; rebuild on a supported base image and upgrade the vulnerable dependencies before any production use. Upgrading the base image or dependency versions is a **dependency/version change** and is **out of scope for this documentation-only task**. *Source: Dockerfile:L1; requirements.txt:L1-L23; frontend/package.json:L1-L45*
 - **Suppress version disclosure** — responses include a `Server: Werkzeug/<version> Python/<version>` header that reveals framework and runtime versions; a production deployment behind a reverse proxy would typically suppress or normalize it. *Source: requirements.txt:L23*
 
-The PostgreSQL credentials shipped in `docker-compose.yml` (`postgres` / `postgres`) and the `SQLALCHEMY_DATABASE_URI` in `api/__init__.py` are **development defaults only**. A production deployment must replace them with strong, externally managed secrets (for example via environment variables or a secrets manager) and must not reuse the committed `postgres`/`postgres` values. See [Configuration](#configuration) for the full variable reference. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55*
+The PostgreSQL credentials shipped in `docker-compose.yml` (`postgres` / `postgres`) and the `SQLALCHEMY_DATABASE_URI` in `api/__init__.py` are **development defaults only**. Because the URI is hardcoded in source (not environment-driven), replacing them is a **source/configuration change**: edit the hardcoded `dbURL` in `api/__init__.py` and the matching `POSTGRES_*` values in `docker-compose.yml`, and — to manage them externally via environment variables or a secrets manager — first modify the code to read the URI from the environment. Do not reuse the committed `postgres`/`postgres` values. See [Configuration](#configuration) for the full variable reference. *Source: docker-compose.yml:L19-L22; api/__init__.py:L55,L57*
 
 ## Acknowledgements and License
 
