@@ -34,7 +34,7 @@ The first number one song of the Billboard Hot 100 was "Poor Little Fool" by Ric
 
 ### What this app does
 
-End to end, `hot-stuff` turns weekly chart snapshots into a browsable, analyzable dataset. A separate weekly job scrapes the Billboard site and stores each song, then enriches every track with [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) via the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library (Source: README.md:L521, README.md:L523). The Flask API then serves that data as JSON — letting you page through a given chart week, search every appearance of an artist, look up a single track by its Spotify ID, and compute yearly averages with a rolling average for any audio feature (Source: api/routes.py:L38-L201). The React front end renders these responses as interactive [amCharts](https://www.amcharts.com/) visualizations.
+End to end, `hot-stuff` turns weekly chart snapshots into a browsable, analyzable dataset. A separate weekly job scrapes the Billboard site and stores each song, then enriches every track with [Spotify Audio Features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject) via the [Spotipy](https://spotipy.readthedocs.io/en/2.18.0/) library (Source: README.md:L533, README.md:L535). The Flask API then serves that data as JSON — letting you page through a given chart week, search every appearance of an artist, look up a single track by its Spotify ID, and compute yearly averages with a rolling average for any audio feature (Source: api/routes.py:L38-L201). The React front end renders these responses as interactive [amCharts](https://www.amcharts.com/) visualizations.
 
 ### A note on scope: "server.js" and "JSDoc"
 
@@ -146,7 +146,7 @@ There are two supported ways to run the app: the containerized path (Docker Comp
 
 - **For the container path:** Docker and Docker Compose.
 - **For local development:** Python 3.11 (matching the container runtime, Source: Dockerfile:L1) and Node.js with npm (for building the React front end, Source: frontend/package.json:L19-L24).
-- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md:L521, README.md:L523). **This repository expects a pre-populated database and does NOT include the ingestion script.** On an empty database the API's behavior varies by endpoint: `/api/track/<spotify_id>` and `/api/artist/<artist>` return an empty array (`200 []`) when nothing matches, but `/api/week/<week>` and `/api/analysis/<feature>` assume a populated database and return **HTTP 500** when queried against empty data (Source: api/funcs.py:L71-L102, api/funcs.py:L42-L68). This also affects the `/api/` root, which redirects to the current chart week and therefore fails the same way on a fresh database (Source: api/routes.py:L57-L74). Load data externally before expecting meaningful responses.
+- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md:L531, README.md:L533, README.md:L535). **This repository expects a pre-populated database and does NOT include the ingestion script.** On an empty database the API's behavior varies by endpoint: `/api/track/<spotify_id>` and `/api/artist/<artist>` return an empty array (`200 []`) when nothing matches, but `/api/week/<week>` and `/api/analysis/<feature>` assume a populated database and return **HTTP 500** when queried against empty data (Source: api/funcs.py:L71-L102, api/funcs.py:L42-L68). This also affects the `/api/` root, which redirects to the current chart week and therefore fails the same way on a fresh database (Source: api/routes.py:L57-L74). Load data externally before expecting meaningful responses.
 
 ### Run with Docker Compose
 
@@ -567,6 +567,15 @@ graph TB
 ### Production consideration — development server caveat
 
 The container's `CMD` runs `python3 app.py` (Source: Dockerfile:L15), which calls `app.run()` and therefore starts **Flask's built-in development server** (Source: app.py:L41). Although `gunicorn` 20.1.0 is pinned in `requirements.txt` (Source: requirements.txt:L7), it is **not** invoked by the container command — the development server is what actually serves requests. For production traffic you would front the app with a WSGI server such as gunicorn and replace the development-only PostgreSQL credentials (see the security note under [Configuration](#configuration)).
+
+### Production hardening
+
+The points below document the repository's **current** security posture as-is. They are disclosures for operators — not changes introduced by this documentation — and remediation (such as upgrading the base image or dependencies) is a separate, non-documentation effort that is intentionally out of scope here.
+
+- **Base image lifecycle.** The backend image is built `FROM python:3.11-slim-buster` (Source: Dockerfile:L1). The `buster` tag pins it to Debian 10 "Buster", whose long-term support reached end-of-life on 2024-06-30, so the image no longer receives Debian security updates. For non-local use, plan a move to a currently-supported base (for example a `bookworm`-based Python image) as part of routine maintenance.
+- **Permissive CORS.** Cross-origin sharing is enabled globally with `CORS(app)` (Source: api/__init__.py:L66), applying Flask-Cors' default policy — any origin — to every route, including `/api/*`. This suits local development but is broader than most deployments want; a hardened setup would restrict the allowed origins to the specific front-end host(s).
+- **No security response headers.** The app sets none of the common hardening headers — `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, or `Strict-Transport-Security` — and defines no `after_request` hook in `app.py` or the `api` package. Behind a production reverse proxy these are typically added at the proxy or via an extension such as Flask-Talisman.
+- **Development server and default credentials.** The container serves traffic with Flask's built-in development server (see the development-server caveat above), and the PostgreSQL credentials are the repository's development-only defaults (see the security note under [Configuration](#configuration)). Replace both before any non-local deployment.
 
 ## Acknowledgements and License
 
