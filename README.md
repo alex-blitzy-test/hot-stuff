@@ -146,7 +146,7 @@ There are two supported ways to run the app: the containerized path (Docker Comp
 
 - **For the container path:** Docker and Docker Compose.
 - **For local development:** Python 3.11 (matching the container runtime, Source: Dockerfile:L1) and Node.js with npm (for building the React front end, Source: frontend/package.json:L19-L24).
-- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md:L521, README.md:L523). **This repository expects a pre-populated database and does NOT include the ingestion script.** With an empty database the API will return empty results; load data externally before expecting meaningful responses.
+- **Data prerequisite (assumption A4):** The PostgreSQL database is populated by an **external, out-of-repository** weekly scraper + Spotipy audio-feature enrichment pipeline (Source: README.md:L521, README.md:L523). **This repository expects a pre-populated database and does NOT include the ingestion script.** On an empty database the API's behavior varies by endpoint: `/api/track/<spotify_id>` and `/api/artist/<artist>` return an empty array (`200 []`) when nothing matches, but `/api/week/<week>` and `/api/analysis/<feature>` assume a populated database and return **HTTP 500** when queried against empty data (Source: api/funcs.py:L71-L102, api/funcs.py:L42-L68). This also affects the `/api/` root, which redirects to the current chart week and therefore fails the same way on a fresh database (Source: api/routes.py:L57-L74). Load data externally before expecting meaningful responses.
 
 ### Run with Docker Compose
 
