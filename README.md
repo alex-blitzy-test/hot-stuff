@@ -151,15 +151,21 @@ There are two supported ways to run the app: the containerized path (Docker Comp
 ### Run with Docker Compose
 
 ```bash
+# Docker Compose v2 (bundled with modern Docker — note the space):
+docker compose up
+
+# ...or, only where the deprecated standalone v1 binary is installed:
 docker-compose up
 ```
+
+> **Note — Compose CLI form:** Modern Docker ships Compose v2 as the `docker compose` subcommand (with a space); prefer it. The standalone v1 `docker-compose` binary (hyphenated) reached end of life in June 2023 and is absent from current Docker installs, so the hyphenated form works only where that legacy binary is still installed.
 
 Docker Compose builds the `api` image from the local `Dockerfile` and starts a `postgres:15` database container (Source: docker-compose.yml:L3-L22). Once running:
 
 - The application is reachable at **`http://localhost:80`** — Compose maps host port `80` to the container's port `5000` (Source: docker-compose.yml:L10-L11).
 - PostgreSQL is exposed on **`5432`** (Source: docker-compose.yml:L17-L18).
 
-The `api` service also sets `NODE_OPTIONS=--openssl-legacy-provider`, which is required to build the front end with react-scripts 4.0.3 on modern Node.js (Source: docker-compose.yml:L9; see the caveat in [Local Development](#local-development)).
+The `api` service also sets `NODE_OPTIONS=--openssl-legacy-provider`, which is required to build the front end with react-scripts 4.0.3 on modern Node.js (Source: docker-compose.yml:L9; see the caveat in [Local Development](#local-development)). Note that this variable has **no effect inside the `api` container itself**: the backend image installs no Node.js and never builds the front end — it only serves the pre-built `frontend/build` directory (Source: Dockerfile:L1-L15, api/__init__.py:L64). `NODE_OPTIONS` therefore matters only when you build the SPA locally (see the Local Development caveat below).
 
 ### Local Development
 
@@ -167,7 +173,7 @@ The `api` service also sets `NODE_OPTIONS=--openssl-legacy-provider`, which is r
 
 ```bash
 # from the repository root
-python3 -m venv venv
+python3 -m venv venv            # Windows: python -m venv venv   (or: py -3.11 -m venv venv)
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
@@ -176,10 +182,14 @@ pip install -r requirements.txt
 flask run
 
 # ...or run the entry point directly
-python3 app.py
+python3 app.py                  # Windows: python app.py         (or: py -3.11 app.py)
 ```
 
 Running `python3 app.py` starts Flask's built-in development server bound to `0.0.0.0` on the default port `5000` (Source: app.py:L41).
+
+> **Windows note — `python3` vs `python`/`py`:** On Windows the bare `python3` command is a non-functional Microsoft Store alias stub: it prints "Python was not found" and exits without creating a virtual environment or starting the app. Use `python`, or the version-specific launcher `py -3.11` (matching the container's Python 3.11, Source: Dockerfile:L1), wherever the commands above say `python3`. Likewise, `source venv/bin/activate` is POSIX-only — on Windows activate the environment with `venv\Scripts\activate`.
+
+> **Caveat — database access for host-native runs:** The connection string hard-codes the database host as `postgres` (Source: api/__init__.py:L71,L73), which is the Docker Compose **service name** of the database container (Source: docker-compose.yml:L15) and only resolves on the Compose network. Running `flask run` or `python app.py` directly on the host therefore cannot reach the database: the app and the `/` SPA route start fine, but the `/api/*` data endpoints fail with `HTTP 500` (`could not translate host name "postgres"`). To develop against real data, either **(a)** run the full stack with `docker compose up`, which provides the `postgres` service, or **(b)** make the name `postgres` resolve to a running PostgreSQL — for example add a `127.0.0.1 postgres` entry to your hosts file and start a local PostgreSQL published on port `5432` (Source: docker-compose.yml:L18) using the same `postgres`/`postgres`/`db` credentials (Source: docker-compose.yml:L20-L22).
 
 **Frontend (React SPA):**
 
@@ -200,6 +210,8 @@ The CRA dev server proxies API requests to the Flask backend at `http://localhos
 # runs: cd .. && venv/bin/flask run --no-debugger (Source: frontend/package.json:L21)
 npm run start-api
 ```
+
+> **Note — `start-api` is POSIX-only:** This convenience script runs `venv/bin/flask` (Source: frontend/package.json:L21), a POSIX virtual-environment path, so it works on Linux/macOS but fails on Windows, where the executable lives at `venv\Scripts\flask.exe`. It is a pre-existing script and is intentionally left unchanged (this is a documentation-only task); on Windows, start the backend directly from the repository root with `flask run` (or `python app.py`) instead.
 
 > **Caveat — `NODE_OPTIONS` on modern Node.js:** react-scripts 4.0.3 (Source: frontend/package.json:L15) relies on an OpenSSL provider that was removed in newer Node.js releases. If `npm run build` or `npm start` fails with an OpenSSL/`ERR_OSSL_EVP_UNSUPPORTED` error, set the legacy provider flag (the same one the container uses, Source: docker-compose.yml:L9):
 >
