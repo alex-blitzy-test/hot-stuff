@@ -155,18 +155,24 @@ This builds the `api` image from the `Dockerfile` and starts a `postgres:15` con
 **Backend (Flask API):**
 
 ```bash
+# Create the virtual environment
+#   macOS/Linux: python3 -m venv venv   |   Windows: python -m venv venv   (or: py -3 -m venv venv)
 python3 -m venv venv
-# Windows: venv\Scripts\activate   |   macOS/Linux: source venv/bin/activate
+# Activate the virtual environment
+#   Windows: venv\Scripts\activate      |   macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
 
 # Option A — use the Flask CLI (reads .flaskenv: FLASK_APP=app.py, FLASK_ENV=development)
 flask run
 
 # Option B — run the module directly (binds 0.0.0.0)
+#   macOS/Linux: python3 app.py   |   Windows: python app.py   (or: py -3 app.py)
 python3 app.py
 ```
 
 *Source: .flaskenv:L1-L2; app.py:L1-L27.* `flask run` serves on port `5000` by default; `python3 app.py` binds `host='0.0.0.0'`. *Source: app.py:L37*
+
+> **Caveat — Python interpreter name (`python3` vs `python`).** The commands above use `python3`, which is the interpreter name on **macOS/Linux**. On **Windows**, `python3` is not a real command — it resolves to a Microsoft Store alias stub and fails — so use **`python`** (or the version launcher **`py -3`**) instead, e.g. `python -m venv venv` and `python app.py`. This mirrors the Windows / macOS-Linux split already shown above for virtual-environment activation. *Source: .flaskenv:L1-L2; app.py:L1-L37*
 
 **Frontend (React SPA):**
 
@@ -186,6 +192,8 @@ npm start
 > **Caveat — Node.js / OpenSSL 3:** `react-scripts` 4.0.3 does not run on modern Node.js/OpenSSL 3 without a legacy flag. Set `NODE_OPTIONS=--openssl-legacy-provider` before building or starting the front end. The Docker Compose `api` service already sets this variable. *Source: frontend/package.json:L15; docker-compose.yml:L9*
 
 The frontend `package.json` also defines a convenience script, `start-api`, that launches the backend from the `frontend/` directory: `cd .. && venv/bin/flask run --no-debugger`. *Source: frontend/package.json:L21*
+
+> **Caveat — `start-api` assumes a macOS/Linux virtual-environment layout.** This convenience script hard-codes the UNIX venv path `venv/bin/flask`, so it works only on **macOS/Linux**. On **Windows**, virtual-environment executables live under `venv\Scripts\` (not `venv/bin/`), so the script fails there. Launch Flask directly instead — activate the environment (`venv\Scripts\activate`) and run `flask run --no-debugger`, or invoke `venv\Scripts\flask run --no-debugger`. *Source: frontend/package.json:L21*
 
 ## Configuration
 
