@@ -40,7 +40,7 @@ Shared extensions:
     module-level singletons imported across the package: ``api/models.py``
     imports ``db`` and ``ma`` to declare the ORM models and schemas, while
     ``api/routes.py`` imports ``app`` to register its endpoints.
-    (Source: api/__init__.py:L80-L81; api/models.py:L1, api/routes.py:L4)
+    (Source: api/__init__.py:L80-L81; api/models.py:L1, api/routes.py:L29)
 
 Deliberate trailing side-effect import:
     ``from api import routes`` intentionally appears LAST. Importing it
