@@ -14,29 +14,33 @@ Single-origin design:
     (SPA) and the JSON API. ``static_url_path='/'`` maps the built frontend
     under ``../frontend/build`` to the site root ``/``, while the route
     handlers in ``api/routes.py`` add the ``/api/*`` JSON endpoints on top
-    of the same process. (Source: api/__init__.py:L8)
+    of the same process. (Source: api/__init__.py:L64)
 
 CORS:
     ``CORS(app)`` enables cross-origin requests against the API so browser
     clients loaded from a different origin can call the ``/api/*``
-    endpoints. (Source: api/__init__.py:L9)
+    endpoints. (Source: api/__init__.py:L66)
 
 Database configuration:
     ``SQLALCHEMY_DATABASE_URI`` is set to
     ``postgresql://postgres:postgres@postgres/db``. The host segment
     ``postgres`` is the Docker Compose service name of the PostgreSQL 15
-    container (Source: docker-compose.yml), not a literal hostname; Compose
-    resolves it to the database container on the shared network.
+    container (Source: docker-compose.yml:L15-L22), not a literal hostname;
+    Compose resolves it to the database container on the shared network. The
+    ``postgres:postgres`` username/password are the repository's existing
+    Docker Compose development-only defaults
+    (Source: docker-compose.yml:L19-L22) and must be replaced with secure
+    credentials before any production deployment.
     ``SQLALCHEMY_TRACK_MODIFICATIONS`` is disabled to suppress the
     SQLAlchemy event-notification overhead.
-    (Source: api/__init__.py:L12,L14-L15)
+    (Source: api/__init__.py:L71,L73-L75)
 
 Shared extensions:
     ``db = SQLAlchemy(app)`` and ``ma = Marshmallow(app)`` are
     module-level singletons imported across the package: ``api/models.py``
     imports ``db`` and ``ma`` to declare the ORM models and schemas, while
     ``api/routes.py`` imports ``app`` to register its endpoints.
-    (Source: api/__init__.py:L18-L19)
+    (Source: api/__init__.py:L80-L81; api/models.py:L1, api/routes.py:L4)
 
 Deliberate trailing side-effect import:
     ``from api import routes`` intentionally appears LAST. Importing it
@@ -44,7 +48,7 @@ Deliberate trailing side-effect import:
     handler against the already-initialized ``app``. It must stay at the
     bottom because ``api/routes.py`` imports ``app`` back from this module,
     so importing routes any earlier would raise a circular-import /
-    partial-initialization error. (Source: api/__init__.py:L21)
+    partial-initialization error. (Source: api/__init__.py:L87)
 """
 
 from flask import Flask
@@ -62,7 +66,7 @@ app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
 CORS(app)
 
 # database: the 'postgres' host segment below is the Docker Compose
-# service name of the PostgreSQL 15 container (see docker-compose.yml),
+# service name of the PostgreSQL 15 container (see docker-compose.yml:L15-L22),
 # not a literal hostname; Compose resolves it to the DB container.
 dbURL = f'postgresql://postgres:postgres@postgres/db'
 
