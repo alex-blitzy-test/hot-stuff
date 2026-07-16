@@ -3,8 +3,16 @@ import pandas as pd
 
 
 def get_query_week(date):
-    '''Returns date of either last or next Saturday in YYYY-MM-DD format
-    depending on time of the week'''
+    """Returns date of either last or next Saturday in YYYY-MM-DD format
+    depending on time of the week
+
+    Args:
+        date (str | None): A date string in 'YYYY-MM-DD' form, or None to use
+            today's date (used by the /api/ home route).
+
+    Returns:
+        str: A normalized Saturday chart-week label in 'YYYY-MM-DD' format.
+    """
 
     if date:
         date = datetime.strptime(date, '%Y-%m-%d')
@@ -12,9 +20,16 @@ def get_query_week(date):
         # for home route
         date = datetime.today()
     date_weekday = date.weekday()
+    # Snap the input date to its published chart week (charts publish on
+    # Saturdays): compute the upcoming Saturday via (12 - weekday) % 7, then
+    # derive the previous Saturday as next_sat minus 7 days.
     days_till_next_sat = timedelta((12 - date_weekday) % 7)
     next_sat = date + days_till_next_sat
     last_sat = next_sat - timedelta(days=7)
+    # Return the LAST Saturday when the weekday is Sun/Mon/Tue (weekday in
+    # [6, 0, 1]), or on Wednesday (weekday == 2) when the current server clock
+    # -- datetime.now().time(), NOT the time component of the supplied date --
+    # is before 10:00; otherwise return the NEXT Saturday.
     if date_weekday in [
             6, 0, 1
     ] or (date_weekday == 2 and datetime.now().time() <
@@ -25,11 +40,27 @@ def get_query_week(date):
 
 
 def get_rolling_avg(data):
-    '''Takes data from yearly average query and adds 5 year rolling average'''
+    """Takes data from yearly average query and adds 5 year rolling average
 
+    Args:
+        data (list[dict]): Yearly-average query rows; each dict has a 'year'
+            key plus exactly one audio-feature key.
+
+    Returns:
+        list[dict]: Records with keys 'year', 'value', and 'rolling', with
+            leading NaN rolling rows dropped.
+    """
+
+    # Identify the single audio-feature column (every row also carries 'year').
     feature = [i for i in data[0].keys() if i != 'year'][0]
     df = pd.DataFrame(data)
+    # Authoritative 5-period rolling average: a 5-record rolling mean over the
+    # yearly rows (the leading rows have no full 5-row window and yield NaN).
     df['rolling'] = df[feature].rolling(5).mean()
+    # Transform for the client: null-normalize values where pandas allows it
+    # (df.where(pd.notnull(df), None)), rename the single feature column to
+    # 'value', convert to records, then drop the leading rows whose 'rolling'
+    # value is still NaN (the first 4, before the 5-row window fills).
     df = df.where(pd.notnull(df), None)
     df = df.rename(columns={feature: 'value'})
     d = df.to_dict(orient='records')
@@ -38,7 +69,15 @@ def get_rolling_avg(data):
 
 
 def get_weekly_data(data):
-    '''Takes weekly song data and returns average of each feature'''
+    """Takes weekly song data and returns average of each feature
+
+    Args:
+        data (list[dict]): Serialized Tracks rows for one chart week.
+
+    Returns:
+        dict: {'averages': [{'feature': str, 'mean': int, 'full': int}],
+            'avgTempo': int} - per-feature mean scores and average tempo.
+    """
 
     d = {}
     averages = []
@@ -50,9 +89,14 @@ def get_weekly_data(data):
         tempObj = {}
         series = df[col]
         tempObj['feature'] = col.title()
+        # x100 integer scaling: each audio-feature mean (a 0-1 fraction) is
+        # multiplied by 100 and truncated to an integer percentage for
+        # charting; 'full' is the constant 100 baseline used by the chart.
         tempObj['mean'] = int(series.mean() * 100)
         tempObj['full'] = 100
         averages.append(tempObj)
     d['averages'] = averages
+    # Tempo is averaged and truncated to an integer BPM (NOT scaled x100 like
+    # the audio features above).
     d['avgTempo'] = int(df['tempo'].mean())
     return d
