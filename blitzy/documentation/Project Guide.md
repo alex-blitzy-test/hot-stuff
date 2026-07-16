@@ -1,6 +1,9 @@
-# Blitzy Project Guide — `hot-stuff` Documentation Delivery
+# Blitzy Project Guide — hot-stuff Documentation Task
 
-> **Brand color legend (applied throughout):** Completed / AI Work = **Dark Blue `#5B39F3`** · Remaining / Not Completed = **White `#FFFFFF`** · Headings / Accents = **Violet-Black `#B23AF2`** · Highlight = **Mint `#A8FDD9`**
+> **Project:** `hot-stuff` — Billboard Hot 100 audio-feature analytics application
+> **Task Type:** DOCUMENT CODE (documentation-only)
+> **Branch:** `blitzy-47db5674-564a-4ebd-8fd4-b6c399ac3ba5` · **HEAD:** `2a0b902` · **Baseline (pre-doc):** `2fd0190`
+> **Brand legend:** <span style="color:#5B39F3">**Completed / AI Work = Dark Blue (#5B39F3)**</span> · Remaining / Not Completed = White (#FFFFFF) · Headings/Accents = Violet-Black (#B23AF2) · Highlight = Mint (#A8FDD9)
 
 ---
 
@@ -8,62 +11,64 @@
 
 ### 1.1 Project Overview
 
-`hot-stuff` is a Billboard Hot 100 audio-feature analytics application: a single Flask process serves a compiled React single-page app at `/` and a JSON REST API under `/api/*`, backed by PostgreSQL 15 and fed by an external weekly scraper + Spotipy enrichment pipeline. This project delivered **comprehensive documentation** for that application — Google-style Python docstrings and inline explanations across the five backend "server" modules, plus a comprehensive 13-section root `README.md` covering setup, configuration, an API reference for all six routes, data models, architecture diagrams, and a deployment guide. The work is strictly documentation-only: no application logic, signatures, dependencies, or behavior were changed.
+`hot-stuff` is a Billboard Hot 100 audio-feature analytics application: a Python/Flask backend serves a compiled React single-page app and a JSON API under one origin, backed by PostgreSQL. This engagement was a **documentation-only** task — add Google-style docstrings to the backend "server" modules and produce a comprehensive README (setup, API reference, deployment, inline explanations). The user's literal "add JSDoc to `server.js`" request was reconciled to the repository's actual Python/Flask backend, because no `server.js` exists. Target users are developers and operators onboarding to the app. Business impact: a former ~30-line README and a largely undocumented backend now carry complete, citation-backed documentation, shrinking onboarding time and clarifying architecture and data prerequisites.
 
 ### 1.2 Completion Status
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'pie1':'#5B39F3','pie2':'#FFFFFF','pieStrokeColor':'#B23AF2','pieStrokeWidth':'2px','pieOpacity':'1'}}}%%
-pie showData
-    title Completion Status — 87.2% Complete (39.0h total)
-    "Completed Work (AI)" : 34
-    "Remaining Work" : 5
+%%{init: {'theme':'base', 'themeVariables': {'pie1':'#5B39F3','pie2':'#FFFFFF','pieStrokeColor':'#B23AF2','pieStrokeWidth':'2px','pieOuterStrokeWidth':'2px','pieTitleTextSize':'18px','pieSectionTextSize':'15px','pieLegendTextSize':'15px'}}}%%
+pie showData title Completion — 88.9% (32h of 36h)
+    "Completed Work (h)" : 32
+    "Remaining Work (h)" : 4
 ```
 
-| Metric | Value |
+| Metric | Hours |
 |--------|-------|
-| **Total Hours** | **39.0 h** |
-| **Completed Hours (AI + Manual)** | **34.0 h** (34.0 AI + 0.0 Manual) |
-| **Remaining Hours** | **5.0 h** |
-| **Percent Complete** | **87.2 %** |
+| **Total Hours** | **36** |
+| **Completed Hours (AI + Manual)** | **32** (AI 32 + Manual 0) |
+| **Remaining Hours** | **4** |
+| **Percent Complete** | **88.9%** |
 
-> Completion is computed with the PA1 AAP-scoped, hours-based method: `34.0 / (34.0 + 5.0) = 87.2%`. The remaining 5.0 h is exclusively human-gated path-to-production work (review, assumption confirmation, rendered-output verification, optional CI). Per policy, completion is never reported at 100% before human review.
+> Completion is measured strictly in **AAP-scoped + path-to-production hours** (PA1). **100% of the AAP documentation deliverables are complete and validated (zero defects).** The remaining 4 hours are exclusively human path-to-production work — assumption sign-off, PR review/merge, and optional hardening — which is why completion is capped below 100% per the "max 99% before human review" principle.
 
 ### 1.3 Key Accomplishments
 
-- ✅ **100% docstring coverage** of AAP-required units — 15/15 (2 module docstrings, 6 route handlers, 4 model/schema classes, 3 helpers), **plus a bonus** module docstring on `api/routes.py` (16 documented).
-- ✅ **Comprehensive README** expanded from ~1,508 bytes to **36,507 bytes / 447 lines** across **13 sections** with a Table of Contents.
-- ✅ **All 6 API routes documented** with method, path params, a `curl` example, and a source-verified JSON response shape.
-- ✅ **4 Mermaid diagrams** (system-context, request-flow sequence, entity-relationship, deployment topology) — exceeds the AAP minimum of 2.
-- ✅ **161 `Source:` citations** (63 in-code + 98 README) verified both in-range and semantically.
-- ✅ **Accuracy correction applied**: stale "3 year rolling average" → authoritative **"5-year/5-period"** (0 stale occurrences remain).
-- ✅ **Documentation-only guarantee proven**: docstring-stripped AST of all 5 backend files is **identical** to the pre-agent base.
-- ✅ **Runtime-verified**: `from api import app` imports cleanly and all 6 routes register exactly as documented.
+- ✅ **Backend docstring coverage raised from 3/15 (20%) to 15/15 (100%)** — module docstrings on `app.py` and `api/__init__.py`, Google-style docstrings on all 6 route handlers, class docstrings on all 4 models/schemas, and expanded Google-style docstrings on the 3 helpers.
+- ✅ **README expanded from ~30 lines / 1.5 KB to 447 lines / 36.5 KB** with all 13 planned sections (Overview → Deployment), preserving the original Billboard Hot 100 narrative.
+- ✅ **Full API Reference for all 6 routes** (`/`, `/api/`, `/api/track/<id>`, `/api/week/<week>`, `/api/artist/<artist>`, `/api/analysis/<feature>`) with one `curl` example each.
+- ✅ **Setup + Deployment guides** covering Docker Compose and local development, with the `NODE_OPTIONS=--openssl-legacy-provider` caveat and the external data-pipeline prerequisite.
+- ✅ **4 Mermaid diagrams** (system-context, request-flow, ERD, deployment topology) render to valid SVG.
+- ✅ **Mandated accuracy correction applied** — "3 year rolling average" → "5-year" to match `df.rolling(5)`; zero stale wording remains.
+- ✅ **Documentation-only integrity proven** — docstring-stripped AST identical to baseline; `frontend/` untouched; all 5 modules compile clean on Python 3.11 and 3.13.
+- ✅ **177 in-code `Source:` citations** (228 across the full validation audit) all resolve to in-bounds lines.
 
 ### 1.4 Critical Unresolved Issues
 
+There are **no defects blocking release**. The items below are pending human decisions/sign-offs, not code failures.
+
 | Issue | Impact | Owner | ETA |
 |-------|--------|-------|-----|
-| _No blocking issues._ Documentation is complete, accurate, and independently validated. | None — nothing blocks merge/release. | — | — |
-| Interpretation of "server.js" / "JSDoc" (assumptions A1/A2) awaits requester confirmation | **Non-blocking** — scope-interpretation only; already disclosed in README scope note (L39) | Product / Requester | With review (HT-2, 1.0 h) |
+| Interpretation assumptions A1–A4 await user confirmation (server.js→Python, JSDoc→docstrings, README-as-update, external data pipeline) | Low — interpretation is well-justified and documented in README "A note on scope"; only sign-off is pending | Product owner / requester | 1.5h |
+| Documentation PR not yet peer-reviewed / merged | Low — standard path-to-production gate | Reviewing engineer | 1.5h |
+| Frontend chart legend "3 Year Rolling Average" still contradicts corrected docs (`LineChart.js:L47`) | Low — cosmetic UI label; out of the documentation task's scope | Frontend engineer | 0.5h |
 
 ### 1.5 Access Issues
 
-**No access issues identified.** The working branch `blitzy-47db5674-…` is clean and up to date with `origin`; HEAD `845c858` is reachable; all source, manifests, and container definitions were readable; and dependency resolution succeeded from cache. No repository-permission, credential, or third-party API access problems were encountered during autonomous execution or validation.
+**No access issues identified.** The repository was fully accessible on branch `blitzy-47db5674-564a-4ebd-8fd4-b6c399ac3ba5` with a clean working tree; all 6 in-scope files, manifests, Docker definitions, and git history were readable, and no third-party credentials or external services were required for this documentation-only task.
 
 | System/Resource | Type of Access | Issue Description | Resolution Status | Owner |
 |-----------------|----------------|-------------------|-------------------|-------|
-| Git repository / branch | Read/write | None | ✅ No issue | — |
-| Dependency registries (pip/npm) | Read | None (resolved from cache) | ✅ No issue | — |
-| Third-party APIs (Spotify/scraper) | N/A | Out of repo; documented as prerequisite only | ✅ No issue | — |
+| Git repository (`hot-stuff`) | Read/Write | None | ✅ No issue | — |
+| Backend source (`app.py`, `api/*.py`) | Read/Write | None | ✅ No issue | — |
+| Toolchain (Python, Node, Docker, Git) | Execute | None (Docker Compose plugin absent on assessment host, but not required to validate a documentation task) | ✅ No issue | — |
 
 ### 1.6 Recommended Next Steps
 
-1. **[High]** Review and merge the documentation PR (6 files, 972-line doc diff) — verify docstring accuracy and README completeness, then approve.
-2. **[High]** Confirm AAP interpretation assumptions **A1–A4** with the requester (server.js→Python backend, JSDoc→docstrings, README update, external data pipeline as prerequisite).
-3. **[Medium]** Verify the rendered README on the target Git host — confirm all 4 Mermaid diagrams render and all 12 TOC anchor links resolve.
-4. **[Low]** (Optional) Add a docstring-lint CI gate (`pydoclint` 0.9.1 or Ruff `D` rules) to keep docstrings and the 161 source citations synchronized as code evolves.
-5. **[Low]** (Advisory backlog, out of documentation scope) Triage the pre-existing frontend legend fix and the disclosed production-hardening items (credentials, WSGI server, base image).
+1. **[High]** Confirm the flagged interpretation (server.js → Python/Flask backend; JSDoc → Google-style docstrings) by reviewing the README "A note on scope" section and the backend docstrings — or request the literal-JavaScript alternative. *(~1.5h)*
+2. **[High]** Peer-review the documentation PR (6 files, 972 insertions / 19 deletions, doc-only) and merge to `main`; verify Mermaid renders on the Git host. *(~1.5h)*
+3. **[Medium]** Apply the one-line frontend legend fix in `LineChart.js:L47` ("3 Year" → "5-Year Rolling Average") so the UI matches the corrected docs and code. *(~0.5h)*
+4. **[Low]** Optionally add docstring linting (pydoclint 0.9.1 or Ruff `D` rules) to CI to prevent future documentation drift. *(~0.5h)*
+5. **[Low]** Plan a **separate** production-hardening initiative (rotate DB credentials, switch to gunicorn, upgrade the EOL base image, restrict CORS, provision the data pipeline) — these are disclosed in the README but are out of this documentation task's scope.
 
 ---
 
@@ -71,330 +76,375 @@ pie showData
 
 ### 2.1 Completed Work Detail
 
-| # | Component | AAP Ref | Hours | Description |
-|---|-----------|---------|-------|-------------|
-| 1 | Backend module & bootstrap docstrings | R1 | 1.5 | Module docstrings for `app.py` (entry point, run instructions) and `api/__init__.py` (Flask bootstrap: static SPA serving, CORS, SQLAlchemy/Marshmallow config) |
-| 2 | Route handler docstrings | R1/R3 | 3.0 | `api/routes.py` module docstring + Google-style docstrings on all 6 handlers (Route/Args/Returns/Source) |
-| 3 | Data-model class docstrings | R1 | 2.5 | `api/models.py`: `Tracks` (15 cols), `TrackSchema` (15), `YearlyAvg` (10), `YearlyAvgSchema` (9) + `spotify_id` `__init__` omission note |
-| 4 | Helper docstrings | R1 | 1.0 | `api/funcs.py`: 3 helpers expanded to Google style, original summary wording preserved |
-| 5 | Inline code explanations | R5 | 2.0 | Week-normalization branch, authoritative `.rolling(5)` note, ×100 weekly scaling, bind-host comment, `spotify_id` note |
-| 6 | README Overview / Features / Tech Stack / Project Structure | R2 | 3.0 | Preserved Billboard narrative + scope note; versioned stack; annotated file tree |
-| 7 | README Architecture diagrams | R2 | 2.0 | System-context (`graph LR`) + request-flow (`sequenceDiagram`) Mermaid + prose |
-| 8 | README Getting Started | R2 | 2.5 | Docker Compose + local dev paths; `NODE_OPTIONS`, `.flaskenv`, `npm build` caveats |
-| 9 | README Configuration | R2/R4 | 1.0 | Environment-variable reference tables (`SQLALCHEMY_DATABASE_URI`, `POSTGRES_*`, `FLASK_*`, `NODE_OPTIONS`) |
-| 10 | README API Reference | R3 | 4.0 | 6 routes: method, path params, `curl` example, source-verified JSON response shape |
-| 11 | README Data Models + ER diagram | R3 | 1.5 | `Tracks`/`YearlyAvg` + schemas; `erDiagram` |
-| 12 | README Deployment + Data Pipeline + accuracy correction | R4/A4/R3 | 3.5 | Docker image, Compose topology (`graph TB`), dev-server caveat, production hardening; external pipeline prerequisite; "3 year"→"5-year" correction |
-| 13 | QA review cycles + citation verification | R1–R5 | 4.5 | 13-commit multi-cycle QA (citations, scope note, `/api/` redirect, empty-DB behavior, Getting-Started accuracy); 161 citations verified in-range + semantically |
-| 14 | Final validation | R1–R5 | 2.0 | 5 production-readiness gates; AST no-logic-change proof; `py_compile` (3.11 + 3.13); runtime import + route enumeration |
-| | **Total Completed** | | **34.0** | |
+<span style="color:#5B39F3">**All completed work below was delivered autonomously (AI) and validated. Total = 32 hours.**</span>
+
+| Component | Hours | Description |
+|-----------|-------|-------------|
+| `app.py` + `api/__init__.py` module docs (R1) | 3 | Module docstrings for the entry point and Flask bootstrap (single-origin static serving, CORS, DB config, deliberate trailing-import rationale) + inline comments |
+| `api/routes.py` docstrings (R1) | 5 | Module docstring + Google-style docstrings for all 6 handlers (Route / Args / Returns / Source) |
+| `api/models.py` docstrings (R1) | 4 | Class docstrings for `Tracks`, `TrackSchema`, `YearlyAvg`, `YearlyAvgSchema`; every column/field documented; `Tracks.__init__` `spotify_id` omission documented (not changed) |
+| `api/funcs.py` docstrings + inline (R1, R5) | 3 | 3 helper docstrings expanded to Google style; inline explanations of week normalization, `.rolling(5)`, and ×100 scaling; original summary wording preserved |
+| README — Getting Started (R2) | 3 | Docker Compose + local dev setup (venv, `FLASK_APP`/`FLASK_ENV`, `npm` build), prerequisites, `NODE_OPTIONS` caveat |
+| README — API Reference (R3) | 5 | All 6 routes with path params, `curl` requests, and JSON response shapes |
+| README — Deployment (R4) | 3 | Docker image, Compose topology, ports, env vars, dev-server caveat, and a Production hardening disclosure |
+| README — structural sections | 3 | Overview (preserved Billboard narrative), Features, Tech Stack, Project Structure, Configuration, Data Models, Data Pipeline |
+| Architecture + 4 Mermaid diagrams | 2 | System-context, request-flow sequence, entity-relationship, and Compose deployment-topology diagrams |
+| Accuracy correction + citations + QA | 1 | "5-year" rolling-average correction, 177 `Source:` citations, version verification, multi-round QA fixes |
+| **Total Completed** | **32** | |
 
 ### 2.2 Remaining Work Detail
 
-| # | Category | AAP / Path Ref | Hours | Priority |
-|---|----------|----------------|-------|----------|
-| 1 | Human documentation review & merge of PR (972-line doc diff) | Path-to-production | 2.0 | **High** |
-| 2 | Confirm AAP interpretation assumptions A1–A4 with stakeholder | AAP-flagged | 1.0 | **High** |
-| 3 | Verify rendered README (4 Mermaid diagrams + 12 TOC anchors) on Git host | Path-to-production | 1.0 | Medium |
-| 4 | (Optional) Adopt docstring-lint CI gate (`pydoclint` 0.9.1 / Ruff `D`) | AAP 0.9 (optional) | 1.0 | Low |
-| | **Total Remaining** | | **5.0** | |
+**All remaining work is human path-to-production. Total = 4 hours.**
 
-> **Out-of-scope advisory follow-ups (NOT counted in the 39.0 h total):** (ADV-1) correct the frontend chart legend "3 Year Rolling Average" at `frontend/src/components/trends/LineChart.js:L47` (~0.5 h, source change out of documentation scope per AAP 0.8.2); (ADV-2) pre-existing production hardening surfaced by the docs — externalize DB credentials, switch container to gunicorn, upgrade off the EOL `buster` base image (product decisions, awareness only).
+| Category | Hours | Priority |
+|----------|-------|----------|
+| Confirm flagged interpretation assumptions A1–A4 (AAP defers these to the user) | 1.5 | High |
+| Documentation PR peer review + merge to `main` | 1.5 | High |
+| Frontend chart-legend fix decision/apply (`LineChart.js:L47`; out-of-scope source change) | 0.5 | Medium |
+| Optional docstring-lint CI integration (pydoclint / Ruff `D` rules) | 0.5 | Low |
+| **Total Remaining** | **4** | |
 
-### 2.3 Hours Reconciliation & PA1 Methodology
+### 2.3 Hours Reconciliation
 
-- **Formula:** `Completion % = Completed / (Completed + Remaining) = 34.0 / 39.0 = 87.2%`.
-- **Requirement mapping of the 34.0 completed hours:** R1 = 8.0 h · R2 = 8.5 h · R3 = 5.5 h · R4 = 3.5 h · R5 = 2.0 h · QA & final validation (cross-cutting) = 6.5 h.
-- **Cross-section integrity (validated):** Section 2.1 (34.0) + Section 2.2 (5.0) = Section 1.2 Total (39.0) ✓ · Section 1.2 Remaining = Section 2.2 sum = Section 7 "Remaining Work" = **5.0 h** ✓ · Remaining priority split High 3.0 + Medium 1.0 + Low 1.0 = 5.0 h ✓.
-- **Confidence: High** — the documentation scope is well-defined, all deliverables are present, and completeness was verified independently (AST, `py_compile`, runtime import, citation checks).
+| Check | Value | Status |
+|-------|-------|--------|
+| Section 2.1 completed sum | 32h | ✅ |
+| Section 2.2 remaining sum | 4h | ✅ |
+| 2.1 + 2.2 = Section 1.2 Total | 32 + 4 = 36h | ✅ |
+| Section 1.2 remaining = 2.2 sum = Section 7 pie remaining | 4h = 4h = 4h | ✅ |
+| Completion = Completed / Total | 32 / 36 = 88.9% | ✅ |
 
 ---
 
 ## 3. Test Results
 
-> **Context (integrity):** The AAP confirms this repository has **no code test suite** (no test files are tracked — independently verified). For a documentation task, **documentation-accuracy validation is the test surface**. Every entry below originates from Blitzy's autonomous validation logs; entries marked "reproduced" were independently re-run during this assessment.
+This is a **documentation-only** task; the repository contains **no unit/integration test suite** (confirmed by AAP §0.2.2 and repository scan). Accordingly, Blitzy's **autonomous validation gates** stand in for functional testing. Every entry below originates from Blitzy's autonomous validation logs for this project and was independently re-confirmed during this assessment.
 
-| Test Category | Framework / Tool | Total | Passed | Failed | Coverage % | Notes |
-|---------------|------------------|-------|--------|--------|-----------|-------|
-| Docstring coverage | Python `ast` introspection | 15 | 15 | 0 | 100% | All AAP-required units; +1 bonus module docstring (reproduced) |
-| Source-citation accuracy | Scripted range + semantic check | 161 | 161 | 0 | 100% | 63 in-code + 98 README `Source:` citations |
-| API route coverage | Flask URL-map introspection | 6 | 6 | 0 | 100% | Matches live runtime map (reproduced) |
-| API response-shape accuracy | Manual vs schema/handler logic | 6 | 6 | 0 | 100% | Shapes cross-checked against source |
-| Version-string accuracy | Manifest cross-check | 18 | 18 | 0 | 100% | `requirements.txt`, Dockerfile, `package.json` |
-| Mermaid well-formedness | Fence/balance parse | 4 | 4 | 0 | 100% | 4 diagrams, all balanced |
-| Content correction (rolling avg) | Stale-term scan | 1 | 1 | 0 | 100% | 0 stale "3 year" in README (reproduced) |
-| Backend compilation | `py_compile` (Py 3.11 + 3.13) | 5 | 5 | 0 | 100% | Exit 0 on all backend files (reproduced) |
-| Runtime import & routing | Flask import + URL map | 7 | 7 | 0 | 100% | `from api import app` + 6 routes (reproduced) |
-| No-logic-change equivalence | `git` + `ast` diff | 5 | 5 | 0 | 100% | Docstring-stripped AST identical to base (reproduced) |
-| **Total (scored)** | | **228** | **228** | **0** | **100%** | |
-| Static analysis (advisory) | `ruff` 0.15.21 (read-only) | — | — | — | n/a | All findings triaged as pre-existing original code or optional/preserved docstring style; **0 in-scope defects** |
+| Test Category | Framework | Total | Passed | Failed | Coverage % | Notes |
+|---------------|-----------|-------|--------|--------|-----------|-------|
+| Compilation | `py_compile` (CPython 3.11.15 & 3.13.13) | 5 | 5 | 0 | 100% of modules | All 5 backend modules compile clean on both interpreters |
+| Runtime import & route registration | Flask / Python import | 7 | 7 | 0 | — | `import api`/`import app` succeed; 6 API routes + static route register on `url_map` (7 rules) |
+| Docstring coverage | AST probe | 15 | 15 | 0 | 100% | 15/15 AAP documentable units carry docstrings (baseline 3/15) |
+| Documentation accuracy (citations) | Citation audit | 228 | 228 | 0 | — | All `Source: <path>:L<line>` citations resolve in-bounds (0 dangling) |
+| Content assertions | Content audit | 31 | 31 | 0 | — | Version pins, ports, route shapes, schema field lists match source exactly |
+| Diagram rendering | mermaid-cli (mmdc 11.16.0) | 4 | 4 | 0 | — | All README Mermaid diagrams render to valid SVG |
+| Logic-change proof | Docstring-stripped AST diff | 5 | 5 | 0 | — | Each module's code AST identical to baseline `2fd0190` → zero logic change |
+| **Total** | | **269** | **269** | **0** | **100%** | Zero failures across all autonomous validation gates |
+
+> **Integrity note:** No unit/integration/E2E test suite exists for this project; the figures above are Blitzy autonomous **validation-gate** results (compilation, runtime import, coverage, citation accuracy, diagram rendering, and logic-change proof), not application unit tests. They are reported here because they are the authoritative automated evidence produced for this documentation task.
 
 ---
 
 ## 4. Runtime Validation & UI Verification
 
-**Backend runtime**
-- ✅ **Operational** — `from api import app` imports cleanly under Python 3.11.15 (docstring additions did not break module loading).
-- ✅ **Operational** — Flask URL map registers all 6 documented routes exactly: `GET /`, `GET /api/`, `GET /api/track/<spotify_id>`, `GET /api/week/<week>`, `GET /api/artist/<artist>`, `GET /api/analysis/<feature>`, plus the static endpoint that serves the SPA build.
-- ✅ **Operational** — `py_compile` succeeds on all 5 backend modules (Python 3.11 and 3.13).
+**Backend runtime (validated on a faithful CPython 3.11.15 container replica with exact pinned dependencies):**
 
-**API integration**
-- ✅ **Operational** — Documented routes match the live Flask route map 1:1; the `/api/` root is confirmed to issue a 302 redirect to `week/{currentWeek}`.
-- ⚠ **Partial (by design, not a defect)** — Live *data* responses require a pre-populated PostgreSQL database supplied by the external scraper + Spotipy pipeline. With an empty or absent database, data endpoints return empty/degraded results. This behavior is documented in the README Data Pipeline section.
+- ✅ **Operational** — `import api` and `import app` succeed; the Flask `app` object constructs.
+- ✅ **Operational** — All 6 API routes register on the URL map (`/`, `/api/`, `/api/track/<spotify_id>`, `/api/week/<week>`, `/api/artist/<artist>`, `/api/analysis/<feature>`); with the static route, 7 URL rules total.
+- ✅ **Operational** — All docstrings are live (AST-attached) on the imported objects.
+- ✅ **Operational** — All 5 modules compile under both Python 3.11 and 3.13.
 
-**UI verification**
-- ➖ **Not in scope / unchanged** — This is a documentation-only, backend-focused task. The AST/diff confirms **zero frontend files changed** (only `README.md` + 5 backend `.py` files were modified). The React SPA is byte-for-byte unchanged, so no UI regression is possible from this PR. The pre-existing frontend legend "3 Year Rolling Average" (`LineChart.js:L47`) is flagged as advisory (ADV-1) and intentionally left unmodified.
+**Documentation artifacts:**
+
+- ✅ **Operational** — All 4 README Mermaid diagrams render to valid SVG (mmdc 11.16.0).
+- ✅ **Operational** — 6 `curl` examples and 4 JSON response examples are structurally valid against handler/schema definitions.
+
+**UI verification:**
+
+- ⚠ **Partial (out of scope)** — The React frontend was **not** built or exercised in this documentation-only task; `frontend/` is untouched. A known pre-existing UI inconsistency remains: `LineChart.js:L47` shows "3 Year Rolling Average" while the code computes a 5-period mean — flagged for a follow-up source fix.
+
+**End-to-end data flow:**
+
+- ⚠ **Partial (external dependency)** — Full runtime behavior requires a **pre-populated PostgreSQL** produced by an external, out-of-repository weekly scraper + Spotipy pipeline. With an empty database, endpoints return empty result sets. This prerequisite is documented in the README "Data Pipeline" section.
 
 ---
 
 ## 5. Compliance & Quality Review
 
-| AAP Deliverable / Constraint | Benchmark | Status | Progress |
-|------------------------------|-----------|--------|----------|
-| R1 — Backend docstrings | Google-style, PEP 257; 15/15 required units | ✅ Pass | 100% |
-| R2 — Comprehensive README + setup | Docker + local paths, prerequisites, caveats | ✅ Pass | 100% |
-| R3 — API documentation | All 6 routes: method, params, example, response | ✅ Pass | 100% |
-| R4 — Deployment guide | Image, Compose topology, env, dev-server caveat | ✅ Pass | 100% |
-| R5 — Inline code explanations | Non-obvious logic annotated | ✅ Pass | 100% |
-| Accuracy correction | "3 year" → authoritative "5-year/5-period" | ✅ Pass | 100% (0 stale) |
-| Documentation-only constraint | No logic/signature/dependency change | ✅ Pass | AST-proven identical |
-| Citation traceability | `Source: <path>:<line>` per technical claim | ✅ Pass | 161 verified |
-| Version accuracy | Match manifests verbatim | ✅ Pass | 18/18 |
-| Minimal-change / preserve narrative | Expand, don't discard existing content | ✅ Pass | Billboard narrative preserved |
-| Zero-placeholder policy | No TODO/FIXME/TBD in deliverables | ✅ Pass | 0 found |
-| Diagram requirement | ≥ system-context + request-flow | ✅ Pass | 4 diagrams (exceeds) |
-| Scope boundaries honored | Frontend/infra untouched | ✅ Pass | Out-of-scope items flagged only |
+AAP deliverables mapped to Blitzy quality/compliance benchmarks. Fixes applied during autonomous validation are noted.
 
-**Fixes applied during autonomous validation (13-commit QA history):** stale/incorrect source citations corrected; invented column units removed; schema docstrings reworded to not overstate serialized field order; `/api/` redirect and root title clarified; Getting-Started operational accuracy fixed; empty-database API behavior claim corrected; Data-Pipeline self-citations fixed; production-hardening disclosures added. **Outstanding in-scope items: none.**
+| AAP Deliverable | Benchmark | Status | Progress |
+|-----------------|-----------|--------|----------|
+| R1 — Backend docstrings (15 units) | Google-style, PEP 257 compliant | ✅ PASS | 15/15 (100%) |
+| R2 — Comprehensive README setup | Docker + local, prerequisites, caveats | ✅ PASS | 100% |
+| R3 — API documentation | All 6 routes: method, params, example req/resp | ✅ PASS | 6/6 (100%) |
+| R4 — Deployment guide | Image, Compose topology, ports, env, caveats | ✅ PASS | 100% |
+| R5 — Inline code explanations | Non-obvious logic annotated | ✅ PASS | 100% |
+| Accuracy correction | "5-year" matches `df.rolling(5)` | ✅ PASS | 0 stale "3 year" |
+| Source citations | `Source: <path>:<line>` per technical claim | ✅ PASS | 228/228 resolve |
+| Documentation-only constraint | No source-logic changes | ✅ PASS | AST identical to baseline |
+| `spotify_id` omission handling | Document, do not fix | ✅ PASS | Documented in class/inline |
+| Diagram coverage | ≥ system-context + request-flow | ✅ PASS | 4 diagrams |
+| README route coverage | 6/6 (incl. previously missing `/` and `/api/`) | ✅ PASS | 6/6 |
+
+**Fixes applied during autonomous validation (QA cycles):** corrected stale Data Pipeline self-citations; corrected empty-database API behavior claim; fixed Getting Started operational accuracy; added the `/api/` redirect and root title to the API Reference; reworded schema docstrings to avoid overstating serialized field order; removed invented column units; added credential and production-hardening caveats.
+
+**Outstanding compliance items:** human confirmation of interpretation assumptions A1–A4 (deferred to the user by design). No quality defects remain.
 
 ---
 
 ## 6. Risk Assessment
 
-> The documentation deliverable itself is **low risk** (zero logic change, AST-proven). Most items below are **pre-existing** product/infrastructure risks that the new documentation now beneficially **discloses** and correctly leaves unmodified.
-
 | Risk | Category | Severity | Probability | Mitigation | Status |
-|------|----------|----------|-------------|------------|--------|
-| T1 — "server.js"/"JSDoc" reinterpreted as Python backend + docstrings; may differ from literal intent | Technical | Medium | Low | Assumptions flagged in README scope note (L39) + AAP; confirm with requester (HT-2) | Open (awaiting confirmation) |
-| T2 — 161 line-level citations may drift if code later changes | Technical | Low | Medium | Optional docstring-lint CI; keep docs synchronized | Advisory |
-| T3 — No automated doc-accuracy gate in CI | Technical | Low | Medium | Optional `pydoclint` / Ruff `D` rules (HT-4) | Open (optional) |
-| S1 — Hard-coded DB credentials (`postgres:postgres`) in URI + Compose | Security | Medium | N/A for docs | Pre-existing; now disclosed in README hardening; recommend secrets manager | Documented (out of scope to fix) |
-| S2 — Documentation change introduces new security risk | Security | None | None | AST proof = zero logic change | Closed |
-| O1 — Flask dev server in container (`gunicorn` pinned but unused) | Operational | Medium | N/A for docs | Documented as caveat; recommend WSGI server | Documented (out of scope) |
-| O2 — Base image `python:3.11-slim-buster` (Debian buster EOL) | Operational | Medium | Medium (long-term) | Documented; recommend base-image upgrade | Documented (out of scope) |
-| O3 — App requires pre-populated DB via external out-of-repo pipeline | Operational | Medium | Medium | Documented as prerequisite (A4) + empty-DB behavior | Documented |
-| I1 — Hard-coded `postgres` hostname resolves only on Compose network | Integration | Low–Medium | Medium | Documented in Getting Started caveat | Documented |
-| I2 — `react-scripts` 4.0.3 needs `NODE_OPTIONS=--openssl-legacy-provider` | Integration | Low | Low | Documented + set in Compose env | Mitigated |
-| I3 — Mermaid diagrams + TOC anchors render-dependent on Git host | Integration | Low | Low | Post-merge verification task (HT-3) | Open (in remaining) |
+|------|----------|----------|-------------|-----------|--------|
+| Documentation drift (docs stale if code changes) | Technical | Low | Medium | 177 inline `Source:` citations aid traceability; optional docstring-lint CI | Mitigated |
+| Flask dev server in container (`CMD python3 app.py`; gunicorn pinned but unused) | Technical | Medium | High if deployed as-is | Documented in README dev-server caveat + Production hardening | Documented (fix out of scope) |
+| EOL base image `python:3.11-slim-buster` (Debian 10 Buster, EOL 2024-06-30) | Technical | Medium | Medium | Disclosed in README Production hardening | Documented (fix out of scope) |
+| Default DB credentials `postgres:postgres`; hardcoded `SQLALCHEMY_DATABASE_URI` | Security | High | High if deployed as-is | Documented as dev-only defaults; "replace before production" | Documented (human action) |
+| Permissive CORS (`CORS(app)` — all origins) | Security | Medium | Medium | Disclosed in Production hardening | Documented |
+| No auth / missing security headers | Security | Medium | Medium | Disclosed in Production hardening | Documented |
+| External data-pipeline prerequisite; empty DB → empty responses | Operational | Medium | High | Documented as prerequisite (Data Pipeline / assumption A4); empty-DB behavior corrected | Documented |
+| No health-check endpoint / monitoring | Operational | Low | Medium | Noted; remediation out of scope | Accepted |
+| Unconfirmed interpretation assumptions A1–A4 (literal JS/JSDoc alternative) | Integration | Medium | Low | Interpretation explicitly documented + flagged (README "A note on scope") | Open (human) |
+| Frontend "3 Year Rolling Average" legend contradicts corrected 5-year docs | Integration | Low | High | Flagged in README + AAP §0.8.2; 0.5h source fix out of doc scope | Open (flagged) |
+| `start-api` npm script is POSIX-only (fails on Windows shells) | Integration | Low | Low | Documented; pre-existing script unchanged | Documented |
+
+> The application security/infrastructure risks (dev server, EOL image, default credentials, permissive CORS, data prerequisite) are **surfaced by the documentation** as disclosures for the human team. Their remediation is source/infrastructure work explicitly outside this documentation task's scope; they do not reduce documentation completion.
 
 ---
 
 ## 7. Visual Project Status
 
-**Project hours breakdown** (Completed = `#5B39F3`, Remaining = `#FFFFFF`):
+### Project Hours Breakdown
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'pie1':'#5B39F3','pie2':'#FFFFFF','pieStrokeColor':'#B23AF2','pieStrokeWidth':'2px','pieOpacity':'1'}}}%%
-pie showData
-    title Project Hours Breakdown (Total 39.0h)
-    "Completed Work" : 34
-    "Remaining Work" : 5
+%%{init: {'theme':'base', 'themeVariables': {'pie1':'#5B39F3','pie2':'#FFFFFF','pieStrokeColor':'#B23AF2','pieStrokeWidth':'2px','pieOuterStrokeWidth':'2px','pieTitleTextSize':'18px','pieSectionTextSize':'15px','pieLegendTextSize':'15px'}}}%%
+pie showData title Project Hours — Completed vs Remaining
+    "Completed Work" : 32
+    "Remaining Work" : 4
 ```
 
-**Remaining work by priority** (sums to the 5.0 h remaining):
+### Remaining Work by Priority (hours)
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'pie1':'#5B39F3','pie2':'#A8FDD9','pie3':'#FFFFFF','pieStrokeColor':'#B23AF2','pieStrokeWidth':'2px','pieOpacity':'1'}}}%%
-pie showData
-    title Remaining Work by Priority (5.0h)
-    "High" : 3
-    "Medium" : 1
-    "Low" : 1
+%%{init: {'theme':'base', 'themeVariables': {'xyChart': {'plotColorPalette':'#5B39F3'}}}}%%
+xychart-beta
+    title "Remaining Hours by Priority"
+    x-axis ["High", "Medium", "Low"]
+    y-axis "Hours" 0 --> 4
+    bar [3, 0.5, 0.5]
 ```
 
-**Remaining hours per category** (Section 2.2):
+| Priority | Remaining Hours | Items |
+|----------|-----------------|-------|
+| High | 3.0 | Confirm assumptions (1.5) + PR review/merge (1.5) |
+| Medium | 0.5 | Frontend legend fix |
+| Low | 0.5 | Optional docstring-lint CI |
+| **Total** | **4.0** | |
 
-| Category | Hours | Bar |
-|----------|-------|-----|
-| Review & merge (High) | 2.0 | ████████ |
-| Confirm assumptions A1–A4 (High) | 1.0 | ████ |
-| Verify rendered README (Medium) | 1.0 | ████ |
-| Optional docstring-lint CI (Low) | 1.0 | ████ |
-| **Total** | **5.0** | |
-
-> **Integrity:** the pie "Remaining Work" (5) equals Section 1.2 Remaining (5.0 h) and the Section 2.2 sum (5.0 h).
+> **Integrity:** "Remaining Work" = **4h**, identical to Section 1.2 metrics and the Section 2.2 sum.
 
 ---
 
 ## 8. Summary & Recommendations
 
-**Achievements.** The project is **87.2% complete** on an AAP-scoped, hours basis (34.0 h delivered of 39.0 h total). Every AAP requirement (R1–R5) and every inferred documentation need was delivered and independently validated: 100% docstring coverage of required units (plus a bonus), a comprehensive 13-section README with 4 Mermaid diagrams and 161 verified source citations, complete API-reference coverage of all 6 routes, and a corrected rolling-average description. The documentation-only guarantee is proven by a docstring-stripped AST comparison showing all five backend files are byte-for-logic identical to the pre-agent base.
+**Achievements.** The documentation task is **88.9% complete (32 of 36 hours)** and, critically, **100% of the AAP documentation deliverables are delivered and validated with zero defects.** Backend docstring coverage went from 20% to 100% across all 15 units; the README grew from ~30 lines to a comprehensive 447-line, 13-section document with a full 6-route API reference, setup and deployment guides, 4 Mermaid diagrams, and 177 source citations. The mandated "5-year rolling average" correction is applied, and documentation-only integrity is proven (docstring-stripped AST identical to baseline; `frontend/` untouched).
 
-**Remaining gaps & critical path to production.** The outstanding 5.0 h is exclusively **human-gated path-to-production** work — none of it is autonomous engineering. The critical path is: (1) human review & merge → (2) confirm interpretation assumptions A1–A4 → (3) verify rendered output on the Git host → (4) optionally add a docstring-lint CI gate. There are **no blocking defects** and **no in-scope rework**.
+**Remaining gaps.** The 4 remaining hours are exclusively **human path-to-production** activities: confirming the flagged interpretation assumptions the AAP intentionally deferred to the user (1.5h), peer-reviewing and merging the documentation PR (1.5h), an optional one-line frontend legend fix (0.5h), and optionally wiring docstring linting into CI (0.5h).
 
-**Production-readiness assessment.** The **documentation deliverable is production-ready.** It is accurate, complete, well-cited, and carries zero logic risk. Separately, the guide transparently surfaces pre-existing **application** hardening items (hard-coded credentials, Flask dev server in the container, EOL base image, external-DB dependency) that the team should schedule as a distinct backlog — these are outside this documentation task's scope and were correctly left unmodified.
+**Critical path to production.** (1) Confirm interpretation → (2) review & merge the PR. These two High-priority items (3h combined) are the only steps required to consider the documentation itself production-ready and released.
 
-| Success Metric | Target | Actual |
-|----------------|--------|--------|
-| Backend docstring coverage | 15/15 (100%) | 15/15 + 1 bonus ✅ |
-| README API routes documented | 6/6 (100%) | 6/6 ✅ |
-| README target sections | 13/13 | 13/13 ✅ |
-| Accuracy correction (rolling avg) | 0 stale | 0 stale ✅ |
-| Logic changes | 0 | 0 (AST-proven) ✅ |
+**Success metrics.** 15/15 docstring coverage · 6/6 routes documented · 13/13 README sections · 269/269 autonomous validation checks passing · 0 stale accuracy defects · 0 source-logic changes.
+
+**Production readiness assessment.** The **documentation deliverable is production-ready.** The **underlying application** is not — the README responsibly discloses several hardening items (default credentials, Flask dev server, EOL base image, permissive CORS, external data prerequisite). These are out of this documentation task's scope and should be addressed as a separate, explicitly-estimated hardening initiative before any production deployment of the app.
 
 ---
 
 ## 9. Development Guide
 
-> All commands verified during assessment on the host toolchain: Docker 29.6.1, Node v20.20.2 / npm 10.8.2, Python 3.11.15 (project target) / 3.13.13. Run from the repository root unless noted.
+> Commands are drawn from the delivered, validated README. Commands directly executed on the assessment host are marked ✅ verified.
 
 ### 9.1 System Prerequisites
-- **Recommended:** Docker + Docker Compose (v2).
-- **Local (alternative):** Python **3.11**, Node.js **20** + npm, PostgreSQL **15**.
-- **Data prerequisite:** a **pre-populated** PostgreSQL database. The app does not scrape data itself; ingestion is handled by an external weekly scraper + Spotipy pipeline (out of repo). With an empty DB, data endpoints return empty/degraded results.
+
+- **Recommended path:** Docker Engine (✅ verified: Docker 29.6.1) + Docker Compose v2 (`docker compose`) or v1 (`docker-compose`).
+- **Local path:** Python **3.11** (matches the container; the code also compiles on 3.13 ✅) and Node.js with npm (✅ verified: node v22.23.1 / npm 10.9.8) for building the React SPA.
+- **Git** (✅ verified: git 2.55.0).
+- **Data prerequisite:** a **pre-populated PostgreSQL** database produced by the external weekly scraper + Spotipy pipeline (out of repository). With an empty DB, API responses are empty.
 
 ### 9.2 Environment Setup
-- **Docker path:** no manual setup — `docker-compose.yml` provides `POSTGRES_USER/PASSWORD/DB` and `NODE_OPTIONS`.
-- **Local path:**
-  ```bash
-  python -m venv venv
-  # Windows: .\venv\Scripts\activate   |   POSIX: source venv/bin/activate
-  ```
-  `.flaskenv` supplies `FLASK_APP=app.py` and `FLASK_ENV=development`. Note `SQLALCHEMY_DATABASE_URI` is hard-coded to `postgresql://postgres:postgres@postgres/db`; off-Compose, repoint the `postgres` host to `localhost`.
+
+Environment variables (documented in the README Configuration section):
+
+```bash
+# Backend (from .flaskenv)
+FLASK_APP=app.py
+FLASK_ENV=development
+
+# Database URI used by the app (host segment "postgres" = Compose service name)
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@postgres/db
+
+# PostgreSQL container (docker-compose.yml) — DEV DEFAULTS; replace for production
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=db
+
+# Frontend build workaround for react-scripts 4.0.3 on modern Node
+NODE_OPTIONS=--openssl-legacy-provider   # Windows: set NODE_OPTIONS=--openssl-legacy-provider
+```
 
 ### 9.3 Dependency Installation
+
 ```bash
-# Backend (from repo root)
+# Backend (from repository root)
+python3 -m venv venv            # Windows: python -m venv venv   (or: py -3.11 -m venv venv)
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Frontend
-cd frontend && npm install && cd ..
+cd frontend
+npm install
 ```
 
 ### 9.4 Application Startup
+
+**Option A — Docker Compose (recommended):**
+
 ```bash
-# Option A — Docker Compose (recommended)
-docker compose up            # v2 (note the space)
-# docker-compose up          # legacy v1
-# App: http://localhost:80  (host 80 -> container 5000) · PostgreSQL: localhost:5432
+# Docker Compose v2 (note the space):
+docker compose up
+# ...or where only the deprecated standalone v1 binary exists:
+docker-compose up
+# App: http://localhost:80   PostgreSQL: localhost:5432
+```
 
-# Option B — Local backend
-flask run                    # uses .flaskenv
-# or
-python app.py                # dev server on 0.0.0.0:5000
+**Option B — Local development:**
 
-# Frontend build (served by Flask from frontend/build)
-cd frontend
-NODE_OPTIONS=--openssl-legacy-provider npm run build
-# or the CRA dev server (proxies API calls to :5000)
-npm start
+```bash
+# Build the SPA that Flask serves from frontend/build
+cd frontend && npm run build && cd ..
+
+# Run the backend (uses .flaskenv), or run the entry point directly
+flask run                       # http://127.0.0.1:5000
+# ...or
+python3 app.py                  # binds 0.0.0.0:5000
+
+# Alternatively, run the CRA dev server (proxies API calls to :5000)
+cd frontend && npm start
 ```
 
 ### 9.5 Verification Steps
+
 ```bash
-# 1) Backend compiles (docstrings are syntactically valid) — expect exit 0
+# 1) Documentation-only integrity gate — all backend modules compile (✅ verified: EXIT 0)
 python -m py_compile app.py api/__init__.py api/routes.py api/models.py api/funcs.py
 
-# 2) App imports and routes register — expect all 6 routes
-python -c "from api import app; print('\n'.join(sorted(r.rule for r in app.url_map.iter_rules())))"
+# 2) App reachability (React SPA at root)
+curl http://localhost/
 
-# 3) API smoke test (with the stack running)
-curl -i http://localhost/api/            # -> 302 redirect to /api/week/<currentWeek>
+# 3) API smoke checks
+curl http://localhost/api/                              # 302 redirect to current chart week
+curl http://localhost/api/week/2023-01-07               # week payload: {week, songs, averages, avgTempo}
+curl http://localhost/api/analysis/energy               # {feature, data:[{year, value, rolling}]}
 ```
 
 ### 9.6 Example Usage
+
 ```bash
-curl http://localhost/api/track/<spotify_id>   # tracks for a Spotify ID, ordered by rank
-curl http://localhost/api/week/2021-06-26       # {week, songs, averages, avgTempo}
-curl http://localhost/api/artist/drake          # case-insensitive artist match, newest week first
-curl http://localhost/api/analysis/energy       # {feature, data:[{year, value, rolling}]}
+# Tracks for one Spotify ID (ordered by rank)
+curl http://localhost/api/track/0VjIjW4GlUZAMYd2vXMi3b
+
+# Case-insensitive artist search (newest chart week first)
+curl http://localhost/api/artist/drake
+
+# Yearly mean + 5-period rolling average for an audio feature
+curl http://localhost/api/analysis/danceability
 ```
 
 ### 9.7 Troubleshooting
-- **Frontend build fails with a digital-envelope / OpenSSL error** → prepend `NODE_OPTIONS=--openssl-legacy-provider` (required by `react-scripts` 4.0.3 on modern Node).
-- **DB connection errors locally** → the `postgres` hostname only resolves on the Compose network; off-Compose, point the URI at `localhost`.
-- **Endpoints return empty results** → the database is empty; populate it via the external ingestion pipeline first.
-- **Production concern** → the container runs the Flask development server (`gunicorn` is pinned but unused); use a production WSGI server for real traffic.
-- **Windows venv has no `pip`** → the store-alias `python3` may be a stub; use `python`, and bootstrap with `python -m ensurepip` or `uv venv` + `uv pip install`.
+
+- **`error:0308010C:digital envelope routines::unsupported` during `npm run build`** → set `NODE_OPTIONS=--openssl-legacy-provider` (required by react-scripts 4.0.3 on modern Node). Windows: `set NODE_OPTIONS=--openssl-legacy-provider`.
+- **Empty API responses** → the database is not populated. hot-stuff expects a pre-populated PostgreSQL from the external scraper + Spotipy pipeline (out of repository).
+- **`npm run start-api` fails on Windows** → this script is POSIX-only (`cd .. && venv/bin/flask run ...`); run `flask run` from the repository root instead.
+- **Port 80 already in use** (Docker) → change the host port mapping in `docker-compose.yml` (`"80:5000"` → e.g. `"8080:5000"`).
+- **`docker compose` "unknown command"** → your Docker install lacks the Compose v2 plugin; use the standalone `docker-compose up` (v1) instead.
 
 ---
 
 ## 10. Appendices
 
-### A. Command Reference
-| Purpose | Command |
+### Appendix A — Command Reference
+
+| Command | Purpose |
 |---------|---------|
-| Start full stack | `docker compose up` |
-| Run backend (local) | `flask run` or `python app.py` |
-| Build frontend | `NODE_OPTIONS=--openssl-legacy-provider npm run build` |
-| Frontend dev server | `npm start` |
-| Compile backend | `python -m py_compile app.py api/__init__.py api/routes.py api/models.py api/funcs.py` |
-| Enumerate routes | `python -c "from api import app; [print(r.rule) for r in app.url_map.iter_rules()]"` |
-| Install backend deps | `pip install -r requirements.txt` |
+| `docker compose up` / `docker-compose up` | Build and start api + postgres |
+| `python3 -m venv venv` | Create local virtual environment |
+| `pip install -r requirements.txt` | Install backend dependencies |
+| `flask run` | Run backend via `.flaskenv` settings |
+| `python3 app.py` | Run backend entry point (binds 0.0.0.0:5000) |
+| `npm install` / `npm run build` | Install / build the React SPA |
+| `npm start` | CRA dev server (proxies to :5000) |
+| `python -m py_compile app.py api/*.py` | Documentation-only integrity gate |
 
-### B. Port Reference
-| Service | Host Port | Container Port | Notes |
-|---------|-----------|----------------|-------|
-| Flask app (`api`) | 80 | 5000 | `docker-compose.yml`; Flask default 5000 |
-| PostgreSQL | 5432 | 5432 | `postgres:15` |
-| CRA dev server | 3000 | — | `npm start` (local only; proxies to :5000) |
+### Appendix B — Port Reference
 
-### C. Key File Locations
+| Port | Service | Source |
+|------|---------|--------|
+| 80 (host) → 5000 (container) | Flask app (SPA + API) | `docker-compose.yml` / `Dockerfile EXPOSE 5000` |
+| 5000 | Flask dev server (local, direct) | `app.py` (`app.run(host='0.0.0.0')`) |
+| 5432 | PostgreSQL | `docker-compose.yml` |
+
+### Appendix C — Key File Locations
+
 | Path | Role |
 |------|------|
-| `app.py` | Backend entry point (`app.run(host='0.0.0.0')`) |
-| `api/__init__.py` | Flask bootstrap (app, CORS, SQLAlchemy, Marshmallow, static SPA) |
-| `api/routes.py` | 6 HTTP route handlers + schema singletons |
-| `api/models.py` | ORM models & schemas (`Tracks`, `TrackSchema`, `YearlyAvg`, `YearlyAvgSchema`) |
-| `api/funcs.py` | Helpers (`get_query_week`, `get_rolling_avg`, `get_weekly_data`) |
-| `README.md` | Comprehensive 13-section documentation |
-| `Dockerfile` / `docker-compose.yml` / `.flaskenv` | Container, orchestration, and Flask env config |
-| `frontend/` | React SPA (built output served by Flask from `frontend/build`) |
+| `app.py` | Backend entry point (module docstring added) |
+| `api/__init__.py` | Flask bootstrap: app, CORS, DB, extensions (module docstring added) |
+| `api/routes.py` | 6 HTTP route handlers (module + handler docstrings added) |
+| `api/models.py` | ORM models + Marshmallow schemas (class docstrings added) |
+| `api/funcs.py` | Helpers: week normalization, rolling average, weekly aggregation |
+| `README.md` | Comprehensive 13-section project documentation |
+| `requirements.txt` / `Dockerfile` / `docker-compose.yml` / `.flaskenv` | Runtime, image, topology, and Flask env configuration |
+| `frontend/src/components/trends/LineChart.js` | React chart (contains the flagged "3 Year" legend at L47) |
 
-### D. Technology Versions
+### Appendix D — Technology Versions
+
 | Component | Version | Source |
 |-----------|---------|--------|
-| Python (runtime) | 3.11-slim-buster | Dockerfile |
-| PostgreSQL | 15 | docker-compose.yml |
-| Flask | 2.0.1 | requirements.txt |
-| Flask-Cors | 3.0.10 | requirements.txt |
-| flask-marshmallow | 0.14.0 | requirements.txt |
-| Flask-SQLAlchemy | 2.5.1 | requirements.txt |
-| marshmallow | 3.12.1 | requirements.txt |
-| marshmallow-sqlalchemy | 0.26.1 | requirements.txt |
-| SQLAlchemy | 1.4.19 | requirements.txt |
-| gunicorn | 20.1.0 (pinned, unused by CMD) | requirements.txt |
-| psycopg2 / psycopg2-binary | 2.9.6 / 2.9.5 | requirements.txt |
-| numpy / pandas | 1.24.2 / 2.0.0 | requirements.txt |
-| react / react-dom | 17.0.2 | frontend/package.json |
-| react-scripts | 4.0.3 | frontend/package.json |
-| @amcharts/amcharts4 | 4.10.19 | frontend/package.json |
-| styled-components | 5.3.0 | frontend/package.json |
+| Python (runtime) | 3.11-slim-buster | `Dockerfile` |
+| PostgreSQL (container) | 15 | `docker-compose.yml` |
+| Flask | 2.0.1 | `requirements.txt` |
+| Flask-Cors | 3.0.10 | `requirements.txt` |
+| flask-marshmallow | 0.14.0 | `requirements.txt` |
+| Flask-SQLAlchemy | 2.5.1 | `requirements.txt` |
+| marshmallow / marshmallow-sqlalchemy | 3.12.1 / 0.26.1 | `requirements.txt` |
+| SQLAlchemy | 1.4.19 | `requirements.txt` |
+| numpy / pandas | 1.24.2 / 2.0.0 | `requirements.txt` |
+| psycopg2 / psycopg2-binary | 2.9.6 / 2.9.5 | `requirements.txt` |
+| gunicorn | 20.1.0 (pinned, unused by container `CMD`) | `requirements.txt` |
+| Werkzeug | 2.2.3 | `requirements.txt` |
+| react / react-dom | 17.0.2 | `frontend/package.json` |
+| react-scripts | 4.0.3 (needs `NODE_OPTIONS=--openssl-legacy-provider`) | `frontend/package.json` |
+| @amcharts/amcharts4 | 4.10.19 | `frontend/package.json` |
+| styled-components | 5.3.0 | `frontend/package.json` |
 
-### E. Environment Variable Reference
-| Variable | Value / Purpose | Source |
-|----------|-----------------|--------|
-| `FLASK_APP` | `app.py` | `.flaskenv` |
-| `FLASK_ENV` | `development` | `.flaskenv` |
-| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | `api/__init__.py` |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `postgres` / `postgres` / `db` | `docker-compose.yml` |
-| `NODE_OPTIONS` | `--openssl-legacy-provider` (react-scripts 4.0.3) | `docker-compose.yml` / build |
+### Appendix E — Environment Variable Reference
 
-### F. Developer Tools Guide (optional — none required by this task)
-| Tool | Version | Purpose | Caveat |
-|------|---------|---------|--------|
-| pydoclint | 0.9.1 | Verify `Args`/`Returns`/`Raises` match signatures | Python 3.8+ |
-| pydocstyle | 6.3.0 | PEP 257 style check | Final release; deprecated — prefer Ruff `D` rules |
-| Ruff (`D` rules) | current | Docstring linting (successor to pydocstyle) | Read-only recommended (avoid `--fix` on preserved wording) |
-| Sphinx | 8.x | Generate HTML API docs via `napoleon` | Sphinx 9.x needs Python ≥ 3.12; pin 8.x for Python 3.11 |
+| Variable | Example / Default | Purpose |
+|----------|-------------------|---------|
+| `FLASK_APP` | `app.py` | Flask entry point (`.flaskenv`) |
+| `FLASK_ENV` | `development` | Flask environment (`.flaskenv`) |
+| `SQLALCHEMY_DATABASE_URI` | `postgresql://postgres:postgres@postgres/db` | DB connection (host = Compose service name) |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `postgres` / `postgres` / `db` | PostgreSQL container config (dev-only defaults) |
+| `NODE_OPTIONS` | `--openssl-legacy-provider` | Frontend build workaround for react-scripts 4.0.3 |
 
-### G. Glossary
+### Appendix F — Developer Tools Guide (optional, per AAP §0.6.1)
+
+| Tool | Version | Purpose | Note |
+|------|---------|---------|------|
+| pydoclint | 0.9.1 | Verify `Args`/`Returns`/`Raises` match signatures | Maintained docstring linter (Python 3.8+) |
+| pydocstyle | 6.3.0 | PEP 257 style checks | **Final release; deprecated** — prefer Ruff `D` rules |
+| Sphinx | 8.x (e.g. 8.3.0) | Generate HTML API docs via `sphinx.ext.napoleon` | Pin 8.x for Python 3.11 (Sphinx 9.x needs Python ≥ 3.12) |
+| mermaid-cli (mmdc) | 11.16.0 | Validate/render README Mermaid diagrams | Used in autonomous validation |
+
+> None of these are required by the task; they are optional aids for a team that later wants enforced docstring conventions or generated HTML docs. No new runtime dependencies are introduced.
+
+### Appendix G — Glossary
+
 | Term | Definition |
 |------|------------|
-| Audio feature | A Spotify-derived numeric track attribute (energy, danceability, valence, tempo, etc.) |
+| Audio feature | A Spotify-derived numeric attribute of a track (energy, danceability, valence, tempo, etc.) |
 | Chart week | A Billboard Hot 100 week, normalized to its Saturday date |
-| Rolling average | The **5-period** rolling mean of a yearly audio-feature series (`df[feature].rolling(5).mean()`) |
-| Single-origin design | One Flask process serving both the compiled React SPA at `/` and the JSON API under `/api/*` |
-| SPA | Single-page application (the React client, served from `frontend/build`) |
-| Marshmallow schema | Serialization definition mapping ORM models to JSON output |
-| Docstring (Google style) | PEP 257 docstring with `Args:`/`Returns:`/`Raises:` sections — the language-appropriate equivalent of JSDoc |
+| Rolling average | The 5-period rolling mean of a yearly audio-feature series (`df.rolling(5).mean()`) |
+| Single-origin design | One Flask process serves both the compiled React SPA (`/`) and the JSON API (`/api/*`) |
+| Google-style docstring | PEP 257-compliant docstring with structured `Args:` / `Returns:` / `Raises:` sections |
+| AAP | Agent Action Plan — the governing project specification |
