@@ -1,3 +1,5 @@
+from datetime import date
+
 from api import db, ma
 
 
@@ -18,14 +20,19 @@ class Tracks(db.Model):
     instrumentalness = db.Column(db.Float)
     loudness = db.Column(db.Float)
 
-    def __init__(self, id, week, rank, track, artist, tempo, energy,
-                 danceability, valence, liveness, speechiness, acousticness,
-                 instrumentalness, loudness):
+    def __init__(self, id: int, week: date | None, rank: int | None,
+                 track: str | None, artist: str | None, spotify_id: str | None,
+                 tempo: float | None, energy: float | None,
+                 danceability: float | None, valence: float | None,
+                 liveness: float | None, speechiness: float | None,
+                 acousticness: float | None, instrumentalness: float | None,
+                 loudness: float | None) -> None:
         self.id = id
         self.week = week
         self.rank = rank
         self.track = track
         self.artist = artist
+        self.spotify_id = spotify_id
         self.tempo = tempo
         self.energy = energy
         self.danceability = danceability

@@ -322,3 +322,34 @@ body {
     height: 50px;
   }
 }
+
+/* artists */
+
+.artistSummary {
+  display: flex;
+  flex-direction: column;
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 3px;
+  background-color: var(--dark-3);
+  color: var(--light);
+}
+
+.artistSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.artistSummaryLabel {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--light);
+}
+
+.artistSummaryValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--light);
+}
