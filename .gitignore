@@ -7,7 +7,8 @@ node_modules
 /coverage
 
 # production
-# build
+/frontend/build
+/frontend/dist
 
 # misc
 .DS_Store
@@ -27,4 +28,3 @@ __pycache__
 venv
 
 /data
-# /frontend/build
