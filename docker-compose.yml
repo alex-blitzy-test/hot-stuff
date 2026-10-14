@@ -6,11 +6,9 @@ services:
     depends_on:
       - postgres
     environment:
-      - NODE_OPTIONS=--openssl-legacy-provider
+      - DATABASE_URL=postgresql://postgres:postgres@postgres/db
     ports:
       - "80:5000"
-    volumes:
-      - .:/app/
 
   postgres:
     image: postgres:15
