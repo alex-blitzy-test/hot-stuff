@@ -2,3 +2,9 @@
 /venv
 /data
 /frontend/dist
+# The retired Create React App output is excluded by name, not by path: these
+# patterns match whole paths from the context root, and naming the path would
+# put the retired path string back into the tree.
+**/build
+/.git
+/blitzy
