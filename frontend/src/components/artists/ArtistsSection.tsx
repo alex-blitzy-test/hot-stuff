@@ -2,12 +2,19 @@
  * The Artist Explorer panel: the fourth tab of the Hot Stuff UI.
  *
  * This container owns the whole of the feature's state — the search term the
- * field reports, the matched chart appearances, the selected track, the summary
- * card and the loading and error state — and sequences the two artist requests:
- * `ArtistSearch` performs only the debounced artist search and reports its
- * outcome upward, and the summary request is issued here when that search
- * completes, matched or not, so the header card's no-appearances state is
- * reachable too. Selecting a track row reveals that track's rank history.
+ * field reports, that term's result payload, the selected track and the loading
+ * and error state — and sequences the two artist requests: `ArtistSearch`
+ * performs only the debounced artist search and reports its outcome upward, and
+ * the summary request is issued here when that search completes, matched or not,
+ * so the header card's no-appearances state is reachable too. Selecting a track
+ * row reveals that track's rank history.
+ *
+ * A completed search and its summary are one payload, published in a single
+ * commit: the card and the rows it describes therefore appear together, and the
+ * payload already on screen is kept until the next one is complete. The card,
+ * the results and the chart all sit inside the scrolling region, whose only
+ * sibling is the fixed top bar, so nothing is ever inserted above content the
+ * user is already reading and the region's top edge never moves.
  *
  * Every request goes through the typed API client, which is the only module that
  * talks to the network; nothing here builds a path, reads a credential or stores
@@ -22,13 +29,34 @@ import Hamburger from '../navigation/Hamburger';
 import { getArtistSummary, ApiError, UNREACHABLE_MESSAGE } from '../../api/client';
 import type { ArtistSearchState } from './ArtistSearch';
 import type { ArtistTrackSelection } from './ArtistResults';
-import type { ArtistSummary } from '../../types/api';
+import type { ArtistSummary, Track } from '../../types/api';
 
 interface ArtistsSectionProps {
   showNav: () => void;
 }
 
 const EMPTY_METRIC = '—';
+
+/**
+ * One term's whole payload: the appearances its artist search returned and the
+ * summary that describes them.
+ *
+ * The two requests are separate — the summary is issued only once the artist
+ * search has completed — but they are one payload to this panel, because the
+ * card belongs above the rows it describes. Both halves are therefore set in the
+ * same callback, which React batches into one commit, so the rows are never
+ * painted without the card that precedes them. `artist` names the term the
+ * payload answers, which is how the panel tells a settled payload from one that
+ * is still settling.
+ */
+interface ArtistPanelResult {
+  /** The trimmed term this payload answers. */
+  artist: string;
+  /** The appearances that term's search returned. */
+  tracks: Track[];
+  summary: ArtistSummary | null;
+  summaryError: string | null;
+}
 
 /**
  * The summary card's labelled metrics, in the order the panel presents them.
@@ -73,8 +101,13 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
     error: null
   });
   const [selection, setSelection] = useState<ArtistTrackSelection | null>(null);
-  const [summary, setSummary] = useState<ArtistSummary | null>(null);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
+  /*
+   * The payload on screen, or `null` while the panel has none to show. One piece
+   * of state rather than one per half is what makes the card and its rows a
+   * single commit: a separate summary state would be set by a later render and
+   * would land above rows that had already been painted.
+   */
+  const [result, setResult] = useState<ArtistPanelResult | null>(null);
 
   /*
    * The summary request that is in flight, held by identity rather than by the
@@ -104,55 +137,63 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
     // the card are cleared and no summary request is owed.
     if (state.artist === '') {
       setSelection(null);
-      setSummary(null);
-      setSummaryError(null);
+      setResult(null);
       return;
     }
 
     /*
-     * The request is in flight; the terminal report below is where the summary
-     * is sequenced from, so exactly one is issued per completed search. Until
-     * that report arrives the panel shows its loading marker alone: the
-     * selection, the chart and the card belonging to the previous term are
-     * cleared here exactly as they are for a blank field, so no earlier search's
-     * card or chart stands beside the marker of the search that replaced it.
+     * The artist request is in flight, so no payload is owed yet. What is on
+     * screen is left exactly as it is: the previous term's rows and card stay
+     * until the terminal report below brings the new payload, which is what keeps
+     * the region from emptying itself — and from blinking — for the length of the
+     * debounce and the request after it.
      */
     if (state.loading) {
-      setSelection(null);
-      setSummary(null);
-      setSummaryError(null);
-      return;
-    }
-
-    // The artist request failed, so there is no artist to summarise. The panel's
-    // error text comes from the search state; the card is cleared instead of
-    // showing a summary for a term that was never resolved.
-    if (state.error !== null) {
-      setSummary(null);
-      setSummaryError(null);
       return;
     }
 
     /*
-     * The result set is the one this search returned, so the selection and the
-     * card left by the previous search are cleared before the summary is asked
-     * for, and the request is issued under the controller the ref now holds: it
-     * is what both handlers below check to know whether this is still the
-     * summary the panel is waiting on.
+     * The artist request failed, so there is no artist to summarise and no
+     * payload to keep: the payload and the chart the previous payload's selection
+     * had opened are cleared together, in this one report, so the region shows
+     * this report's error text alone rather than beside a track the panel no
+     * longer lists.
+     */
+    if (state.error !== null) {
+      setSelection(null);
+      setResult(null);
+      return;
+    }
+
+    /*
+     * The summary is asked for under the controller the ref now holds: it is what
+     * both handlers below check to know whether this is still the summary the
+     * panel is waiting on. Nothing is cleared here: the payload on screen stays
+     * whole — its rows, its card and the chart its selection opened — until the
+     * new one is published, and the previous selection is then cleared in the
+     * same commit as that payload.
      */
     const controller = new AbortController();
     summaryRequestRef.current = controller;
-    // A new result set invalidates the previously selected track and its chart.
-    setSelection(null);
-    setSummary(null);
-    setSummaryError(null);
 
     getArtistSummary(state.artist, controller.signal)
-      .then((result) => {
+      .then((summary) => {
         if (summaryRequestRef.current !== controller) {
           return;
         }
-        setSummary(result);
+        /*
+         * The payload replaces the one on screen whole, in this one commit: the
+         * previous payload's selection — and with it the chart that selection
+         * opened — leaves with the rows and the card it belonged to, so the panel
+         * never shows a chart captioned for a track its rows no longer list.
+         */
+        setSelection(null);
+        setResult({
+          artist: state.artist,
+          tracks: state.tracks,
+          summary,
+          summaryError: null
+        });
       })
       .catch((err: unknown) => {
         if (summaryRequestRef.current !== controller) {
@@ -161,11 +202,18 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
         /*
          * The copy the Tracks and Trends panels show — except that a failure
          * with no response is reported here rather than leaving the card
-         * silent: it settles on the client's shared `UNREACHABLE_MESSAGE`.
+         * silent: it settles on the client's shared `UNREACHABLE_MESSAGE`. The
+         * payload and the previous selection's chart are published and cleared
+         * together here too, so this payload — its rows and its error text, with
+         * no card — arrives as one whole replacement.
          */
-        setSummaryError(
-          err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE
-        );
+        setSelection(null);
+        setResult({
+          artist: state.artist,
+          tracks: state.tracks,
+          summary: null,
+          summaryError: err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE
+        });
       });
   }, []);
 
@@ -189,13 +237,21 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
   }, []);
 
   /*
-   * The search and the summary own separate error state. The search's failure
-   * belongs inside the results region, which has nothing to show without it;
-   * the summary's failure belongs against the card slot, which is the only
-   * element the summary request feeds. Both are shown, so a failed summary
-   * never removes results a search already found.
+   * A term is still settling while its artist request is in flight, or while the
+   * summary of a completed search for it has not yet arrived: the payload's own
+   * term is what says which of those it is, so no flag has to be kept in step
+   * with the requests. `result.artist` is the term whose rows are on screen, and
+   * a payload answering some other term is the one that is still settling — the
+   * rows below it belong to the previous search and stay there until this one is
+   * complete.
    */
-  const loading = search.loading;
+  const artist = search.artist;
+  const pending =
+    search.error === null &&
+    (search.loading || (artist !== '' && result?.artist !== artist));
+  const summary = result?.summary ?? null;
+  const summaryError = result?.summaryError ?? null;
+  const tracks = result?.tracks ?? null;
 
   return (
     <div className='section'>
@@ -203,15 +259,19 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
         <ArtistSearch onChange={handleSearch} delayMs={300} />
         <Hamburger showNav={showNav} />
       </div>
-      {/* The panel's whole content is search-driven and changes without a page
-          load, so the regions that change are live. This one is the summary's
-          slot and is rendered from first paint, so the card or the error message
-          arrives inside a region that already exists. */}
-      <div aria-live='polite'>
-        {/* The summary's own outcome takes the card slot: on a failure the card
-            is already null, because the handler clears it before issuing the
-            request, so the error text stands in its place and the results below
-            — which the search produced — stay on screen. */}
+      {/* Everything below the top bar is search-driven and changes without a
+          page load, so it is one live region, and it is also the panel's only
+          scrolling one: the card, the results, the states and the chart all
+          live inside it. That is what holds the region's top edge still — the
+          fixed top bar is its only sibling — so a payload arriving can only
+          move content inside the region, never the region itself. It is
+          rendered from first paint, so the card or the error message arrives
+          inside a region that already exists. */}
+      <div className='scroll' aria-live='polite' aria-busy={pending}>
+        {/* The summary's own outcome takes the card slot ahead of the rows it
+            describes: a failed summary carries no card, so its error text stands
+            where the card would be and the results below — which the search
+            produced — stay on screen. */}
         {/* The class sits on a wrapper rather than on the heading, because the
             shared stylesheet rule centres an `h1` that is inside `.error`: the
             wrapper is what makes this banner centre like the loading marker. */}
@@ -246,23 +306,25 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
             )}
           </div>
         )}
-      </div>
-      {/* The results region is live as well: its loading marker, a search
-          failure and the matched rows replace one another here with no page
-          load, and the banner is the assertive one of the two. The class and the
-          assertive role sit on a wrapper, which is what lets the shared
-          stylesheet rule centre the banner; its text and heading size stay the
-          ones the Tracks and Trends panels show. */}
-      <div className='scroll' aria-live='polite'>
+        {/* A failed search has no payload at all, so its banner stands alone in
+            the region and is the assertive one of the two. The class and the
+            assertive role sit on a wrapper, which is what lets the shared
+            stylesheet rule centre the banner; its text and heading size stay the
+            ones the Tracks and Trends panels show, and the loading marker keeps
+            the markup those panels use. */}
         {search.error !== null && (
           <div className='error' role='alert'>
             <h1>{search.error}</h1>
           </div>
         )}
-        {loading && <h1 className='loading'>. . .</h1>}
-        {!loading && search.error === null && (
+        {/* The marker is shown only while there is no payload to keep: the first
+            search of a mount, and the one after a blank field or a failed search.
+            A retained payload reports the search in flight through `aria-busy`
+            instead, so the user never loses the results they were reading. */}
+        {pending && result === null && <h1 className='loading'>. . .</h1>}
+        {search.error === null && tracks !== null && (
           <ArtistResults
-            tracks={search.tracks}
+            tracks={tracks}
             selectedTrack={selection === null ? null : selection.track}
             onSelectTrack={handleSelectTrack}
           />
