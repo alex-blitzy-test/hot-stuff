@@ -42,25 +42,28 @@ const EMPTY_METRIC = '—';
  * An artist the chart has never held answers with zero counts, a null rank and
  * null weeks, so those are rendered as an em dash rather than as "null", and the
  * feature list collapses to the same dash instead of an empty line.
+ * The best rank is the card's headline figure, so it is the one entry marked as
+ * such: it is the same figure the ranked rows present at the larger `.rank` size.
  * `Object.entries` visits the keys in the order the response body carried them,
  * so the feature list reads the same on every render of a given payload.
  */
 function summariseMetrics(
   summary: ArtistSummary
-): Array<{ label: string; value: string }> {
+): Array<{ label: string; value: string; headline: boolean }> {
   const averageFeatures = Object.entries(summary.avg_features)
     .map(([feature, mean]) => `${feature} ${mean}`)
     .join(' · ');
 
   return [
-    { label: 'Total weeks', value: `${summary.total_weeks}` },
-    { label: 'Unique tracks', value: `${summary.unique_tracks}` },
-    { label: 'Best rank', value: `${summary.best_rank ?? EMPTY_METRIC}` },
-    { label: 'First week', value: `${summary.first_week ?? EMPTY_METRIC}` },
-    { label: 'Last week', value: `${summary.last_week ?? EMPTY_METRIC}` },
+    { label: 'Total weeks', value: `${summary.total_weeks}`, headline: false },
+    { label: 'Unique tracks', value: `${summary.unique_tracks}`, headline: false },
+    { label: 'Best rank', value: `${summary.best_rank ?? EMPTY_METRIC}`, headline: true },
+    { label: 'First week', value: `${summary.first_week ?? EMPTY_METRIC}`, headline: false },
+    { label: 'Last week', value: `${summary.last_week ?? EMPTY_METRIC}`, headline: false },
     {
       label: 'Average features',
-      value: averageFeatures === '' ? EMPTY_METRIC : averageFeatures
+      value: averageFeatures === '' ? EMPTY_METRIC : averageFeatures,
+      headline: false
     }
   ];
 }
@@ -162,26 +165,44 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
       </div>
       {summary !== null && (
         <div className='artistSummary'>
-          <h4 className='rowEl artist'>{summary.artist}</h4>
+          {/* The panel's subject is the artist it describes, so its name is the
+              panel's top-level heading: the chart caption below sits one level
+              down, the loading and error text keeps the level the other panels
+              use, and the result rows carry no heading at all. The class still
+              supplies the card-title treatment, so the element costs no visual
+              change. */}
+          <h1 className='rowEl artist'>{summary.artist}</h1>
           {summariseMetrics(summary).map((metric) => (
             <div className='artistSummaryRow' key={metric.label}>
               <span className='artistSummaryLabel'>{metric.label}</span>
-              <span className='artistSummaryValue'>{metric.value}</span>
+              <span
+                className={
+                  metric.headline
+                    ? 'artistSummaryValue artistSummaryHeadline'
+                    : 'artistSummaryValue'
+                }
+              >
+                {metric.value}
+              </span>
             </div>
           ))}
           {/* No appearance answers with zero weeks, so the card says so rather
               than showing a dash for every metric. */}
           {summary.total_weeks === 0 && (
-            <h5 className='rowEl track'>No chart appearances</h5>
+            <p className='rowEl track'>No chart appearances</p>
           )}
         </div>
       )}
       <div className='scroll'>
+        {/* The loading and error markers keep the markup the Tracks and Trends
+            panels use, so the same three-dot marker and the same banner text
+            render at the same size as on those tabs. */}
         {error && <h1 className='error'>{error}</h1>}
         {loading && <h1 className='loading'>. . .</h1>}
         {!loading && !error && (
           <ArtistResults
             tracks={search.tracks}
+            selectedTrack={selection === null ? null : selection.track}
             onSelectTrack={handleSelectTrack}
           />
         )}
@@ -194,7 +215,7 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
             region, rows and chart stay reachable by scrolling the panel. */}
         {selection !== null && (
           <div>
-            <h4 className='rowEl artist'>{selection.track}</h4>
+            <h2 className='rowEl artist'>{selection.track}</h2>
             <TrackHistoryChart spotifyId={selection.spotifyId} />
           </div>
         )}
