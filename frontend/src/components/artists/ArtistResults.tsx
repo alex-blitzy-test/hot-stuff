@@ -31,11 +31,28 @@ interface ArtistTrackGroup {
  * that rank is settled by the earliest week among the tied rows, so the chart
  * selection does not depend on the order the payload happens to arrive in.
  * `week` is an ISO `YYYY-MM-DD` string, which orders correctly as plain text.
+ *
+ * A row that is missing any of those four fields is left out of the results
+ * entirely: without a `track` there is nothing to group it by, without a `rank`
+ * nothing to list it under, without a `week` no span to report and no order to
+ * sort it into, and without a `spotify_id` no chart to open. It never becomes a
+ * row.
  */
 function groupAppearances(tracks: Track[]): ArtistTrackGroup[] {
   const groups = new Map<string, ArtistTrackGroup>();
 
   tracks.forEach((appearance) => {
+    // Every `tracks` column but `id` is nullable in `api/models.py`, and the
+    // serializer emits a JSON `null` for a NULL rather than dropping the key.
+    if (
+      appearance.track === null ||
+      appearance.rank === null ||
+      appearance.week === null ||
+      appearance.spotify_id === null
+    ) {
+      return;
+    }
+
     const group = groups.get(appearance.track);
 
     if (group === undefined) {

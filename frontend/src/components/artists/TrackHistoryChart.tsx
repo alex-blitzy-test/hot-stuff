@@ -15,6 +15,32 @@ const CHART_ID = 'trackHistoryChart';
 const lightWhite = 'rgb(230, 230, 230)';
 
 /**
+ * Order two appearances by chart week, oldest first.
+ *
+ * `week` is one of the nullable `tracks` columns the serializer reports as a
+ * JSON `null`, so an appearance without one is ordered before the dated ones:
+ * it has no position in time of its own, and holding the dateless points at one
+ * end leaves the dated ones in the single uninterrupted run the line reads as.
+ * Between two dated appearances this is exactly the text comparison the ISO
+ * `YYYY-MM-DD` form already orders as date order.
+ */
+function byWeekAscending(a: Track, b: Track): number {
+  if (a.week === null) {
+    return b.week === null ? 0 : -1;
+  }
+  if (b.week === null) {
+    return 1;
+  }
+  if (a.week < b.week) {
+    return -1;
+  }
+  if (a.week > b.week) {
+    return 1;
+  }
+  return 0;
+}
+
+/**
  * One selected track's chart history, drawn as rank over time.
  *
  * Rank 1 is the best position, so the value axis is inverted: the line rises
@@ -52,15 +78,7 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       // The endpoint answers rank-ordered, which is the wrong order for a series
       // that reads left to right in time. `week` is an ISO `YYYY-MM-DD` string,
       // so comparing it as text is date order.
-      const history = [...appearances].sort((a, b) => {
-        if (a.week < b.week) {
-          return -1;
-        }
-        if (a.week > b.week) {
-          return 1;
-        }
-        return 0;
-      });
+      const history = [...appearances].sort(byWeekAscending);
 
       // A request that resolved after this effect was cleaned up would otherwise
       // build a chart into a host element React has already moved on from.

@@ -13,24 +13,30 @@
  * Returned by `GET /api/week/<week>` (inside `WeekResponse.songs`),
  * `GET /api/artist/<artist>` and `GET /api/track/<spotify_id>`.
  * Field order follows the serializer, which places `tempo` last.
+ *
+ * Only `id` is guaranteed to carry a value. `TrackSchema` declares no field
+ * types, so marshmallow infers one per name and serializes a NULL as a JSON
+ * `null` instead of dropping the key, and every `tracks` column except the
+ * primary key is nullable in `api/models.py`. Each consumer therefore has to
+ * say what it does with a null rather than assume a value is there.
  */
 export interface Track {
   id: number;
-  /** Chart week as an ISO `YYYY-MM-DD` date string. */
-  week: string;
-  rank: number;
-  track: string;
-  artist: string;
-  spotify_id: string;
-  energy: number;
-  danceability: number;
-  valence: number;
-  liveness: number;
-  speechiness: number;
-  acousticness: number;
-  instrumentalness: number;
-  loudness: number;
-  tempo: number;
+  /** Chart week as an ISO `YYYY-MM-DD` date string; null when the column is null. */
+  week: string | null;
+  rank: number | null;
+  track: string | null;
+  artist: string | null;
+  spotify_id: string | null;
+  energy: number | null;
+  danceability: number | null;
+  valence: number | null;
+  liveness: number | null;
+  speechiness: number | null;
+  acousticness: number | null;
+  instrumentalness: number | null;
+  loudness: number | null;
+  tempo: number | null;
 }
 
 /** One feature's weekly average, part of the `GET /api/week/<week>` payload. */
@@ -55,11 +61,18 @@ export interface WeekResponse {
 
 /** One yearly point of a feature analysis, part of the `GET /api/analysis/<feature>` payload. */
 export interface AnalysisPoint {
-  /** Year as a string, matching the `yearly_avg.year` column. */
-  year: string;
+  /** Year as a string, matching the `yearly_avg.year` column; null when the column is null. */
+  year: string | null;
   value: number;
-  /** Five-year rolling mean; null inside the first four years of the window. */
-  rolling: number | null;
+  /**
+   * Five-year rolling mean.
+   *
+   * Never null: `get_rolling_avg` drops every row whose rolling mean is
+   * undefined, so the window's first four years are absent from `data`
+   * entirely rather than present with a null, and this key always carries a
+   * number.
+   */
+  rolling: number;
 }
 
 /** Body of `GET /api/analysis/<feature>`. */

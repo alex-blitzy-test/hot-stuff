@@ -89,9 +89,12 @@ const weekPayload: WeekResponse = {
   avgTempo: 120,
 };
 
+// A five-year window row: `get_rolling_avg` drops every row whose rolling mean
+// is undefined, so a payload never carries a null `rolling` and the fixture
+// seeds the number a surviving row does carry.
 const analysisPayload: AnalysisResponse = {
   feature: 'tempo',
-  data: [{ year: '2020', value: 120.5, rolling: null }],
+  data: [{ year: '2020', value: 120.5, rolling: 118.72 }],
 };
 
 const summaryPayload: ArtistSummary = {
