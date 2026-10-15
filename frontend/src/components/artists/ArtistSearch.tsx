@@ -18,8 +18,8 @@ export interface ArtistSearchState {
   /**
    * The trimmed term this state belongs to, and empty once the field is
    * cleared. The container needs it because an artist's summary is a separate
-   * path, requested when the search completes, and because it is what lets the
-   * container tell the state of the current search from a superseded one.
+   * path, requested when the search completes, and because it is how the
+   * container recognises the cleared report and knows which artist to summarise.
    */
   artist: string;
   loading: boolean;
@@ -111,13 +111,9 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
           loading: false,
           tracks: [],
           /*
-           * ApiError is raised only for a failure that carried an HTTP
-           * response, and its message is that response's status text — the same
-           * copy the Tracks and Trends panels have always shown. A rejection
-           * without a response, an unreachable backend, arrives here unwrapped
-           * and has no status text to report, so it is named with the client's
-           * shared `UNREACHABLE_MESSAGE` instead of being swallowed: the panel
-           * settles on a message rather than sitting on its loading marker.
+           * The copy the Tracks and Trends panels show — except that a failure
+           * with no response is reported here rather than leaving the panel
+           * silent: it settles on the client's shared `UNREACHABLE_MESSAGE`.
            */
           error: err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE,
         });

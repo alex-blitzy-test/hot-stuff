@@ -1,4 +1,4 @@
-'''Tests for the new ``GET /api/artist/<artist>/summary`` contract.
+'''Tests for the ``GET /api/artist/<artist>/summary`` contract.
 
 The endpoint aggregates a search term's chart appearances server-side, so the
 Artist Explorer's header card can render without the browser aggregating. Its

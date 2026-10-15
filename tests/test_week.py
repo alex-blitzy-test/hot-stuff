@@ -1,12 +1,12 @@
 '''Contract tests for ``GET /api/week/<week>``.
 
-The Tracks tab renders exactly what this route returns, so the payload is pinned
-as the serializer emits it rather than approximately: the four top-level keys,
-the per-song field set, the rank ordering of the songs, the title-cased feature
-names of the weekly averages, the ISO date the marshmallow dump yields for a
-song's week, and an integer ``avgTempo``. The seed in ``tests/conftest.py`` was
-chosen so every mean is an exact integer before truncation, which is what lets
-each expectation below be a literal.
+The Tracks tab renders exactly what this route returns, so the payload is
+pinned as the serializer emits it rather than approximately: the four
+top-level keys, the per-song field set, the rank ordering of the songs, the
+title-cased feature names of the weekly averages, the ISO date the marshmallow
+dump yields for a song's week, and an integer ``avgTempo``. The seed in
+``tests/conftest.py`` was chosen so every mean is an exact integer before
+truncation, which is what lets each expectation below be a literal.
 
 The week the route echoes is the week the handler *computed* through
 ``get_query_week``, not the string that was requested, so the Sunday case is a
@@ -14,9 +14,10 @@ normalisation assertion and not a second copy of the Saturday one.
 
 This module deliberately holds no case for a week that carries no seeded rows.
 ``get_weekly_data([])`` raises ``KeyError`` on an empty row list, and
-``TestConfig`` sets ``TESTING = True``, so the test client re-raises that instead
-of answering 500. That is a frozen limitation of the weekly helper and not part
-of this route's contract - do not add an empty-week case here to "fix" it.
+``TestConfig`` sets ``TESTING = True``, so the test client re-raises that
+instead of answering 500. That is a frozen limitation of the weekly helper and
+not part of this route's contract - do not add an empty-week case here to
+"fix" it.
 '''
 
 # the field set of api.models.TrackSchema, which is the serializer for `songs`
@@ -33,7 +34,8 @@ OLDEST_WEEK = '2021-11-13'
 
 
 def test_week_payload_keys_and_echoed_week(client):
-    '''The body holds exactly the four frozen keys and echoes the week served.'''
+    '''The body holds exactly the four frozen keys and echoes the week
+    served.'''
     response = client.get(f'/api/week/{NEWEST_WEEK}')
 
     assert response.status_code == 200
@@ -53,7 +55,8 @@ def test_week_songs_are_ordered_by_rank(client):
 
 
 def test_week_song_field_set_and_iso_week(client):
-    '''Each song carries the serializer's 15 fields and a YYYY-MM-DD week string.'''
+    '''Each song carries the serializer's 15 fields and a YYYY-MM-DD week
+    string.'''
     songs = client.get(f'/api/week/{NEWEST_WEEK}').get_json()['songs']
 
     for song in songs:
@@ -63,7 +66,8 @@ def test_week_song_field_set_and_iso_week(client):
 
 
 def test_week_averages_are_exact_integers_in_feature_order(client):
-    '''The weekly means are exact integers in the helper's fixed column order.'''
+    '''The weekly means are exact integers in the helper's fixed column
+    order.'''
     body = client.get(f'/api/week/{NEWEST_WEEK}').get_json()
 
     assert body['averages'] == [
@@ -95,7 +99,8 @@ def test_week_single_song_week(client):
 
 
 def test_week_sunday_request_normalises_to_the_saturday_chart_week(client):
-    '''A Sunday request resolves to the preceding Saturday and serves its rows.'''
+    '''A Sunday request resolves to the preceding Saturday and serves its
+    rows.'''
     sunday = client.get('/api/week/2021-11-14')
     saturday = client.get(f'/api/week/{OLDEST_WEEK}')
 

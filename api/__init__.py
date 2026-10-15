@@ -50,19 +50,16 @@ def create_app(config: type[Config] | None = None) -> Flask:
     def index() -> Response:
         return app.send_static_file('index.html')
 
-    # additive response hardening, sitting beside the rule it covers: the two
-    # headers below are set on every response and change no route, status,
-    # payload or extension behaviour. Strict-Transport-Security is deliberately
+    # Sets the two headers on every response, refused requests included, and
+    # Cache-Control: no-store on the JSON API alone; no route, status or
+    # payload is otherwise touched. Strict-Transport-Security is deliberately
     # absent, because no TLS is terminated for this application, and the Server
     # header cannot be silenced from here - Werkzeug's HTTP handler writes it
     # before this response object exists.
     @app.after_request
     def add_response_headers(response: Response) -> Response:
-        '''Adds the response headers this application owns.
-
-        Both headers are set on every response; the cache directive applies to
-        the JSON API only, so the static index document keeps the Cache-Control
-        header send_static_file already gives it.
+        '''The static index document keeps the Cache-Control header
+        send_static_file gives it.
         '''
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'

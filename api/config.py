@@ -1,14 +1,14 @@
-"""Configuration objects for the application factory.
+'''Configuration objects for the application factory.
 
 ``DATABASE_URL`` is read in this module and nowhere else, and it is read when
-the configuration is consumed — at application construction — rather than at
-import. A deployment supplies its own connection string through the
+the configuration is consumed — at application construction — rather than
+at import. A deployment supplies its own connection string through the
 environment: the ``api`` service in ``docker-compose.yml`` for the container,
 ``.flaskenv`` for a host-side ``flask run``. No deployment credential is
 embedded here — the development default below is the compose service's own
 public placeholder, not a secret, and it applies only while ``DATABASE_URL``
 is unset or empty.
-"""
+'''
 
 import os
 
@@ -18,7 +18,7 @@ _DEV_DATABASE_URL = 'postgresql://postgres:postgres@postgres/db'
 
 
 class _DatabaseURL:
-    """Resolve DATABASE_URL when the configuration is consumed, not at import.
+    '''Resolve DATABASE_URL when the configuration is consumed, not at import.
 
     A read in a class body would run at import time, so a process whose
     environment is not final yet — the test runner, which loads no
@@ -27,7 +27,7 @@ class _DatabaseURL:
     which is where the credential is read once. ``default`` is used when the
     variable is unset or empty, and only the development configuration names
     one; without it a missing variable raises.
-    """
+    '''
 
     def __init__(self, default: str | None = None) -> None:
         self._default = default
@@ -44,32 +44,32 @@ class _DatabaseURL:
 
 
 class Config:
-    """Settings every environment shares."""
+    '''Settings every environment shares.'''
 
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
 
 
 class DevConfig(Config):
-    """Development and local-run settings: compose database by default."""
+    '''Development and local-run settings: compose database by default.'''
 
     SQLALCHEMY_DATABASE_URI = _DatabaseURL(_DEV_DATABASE_URL)
 
 
 class TestConfig(Config):
-    """Test settings: an in-memory SQLite database, discarded with the fixture.
+    '''Test settings: an in-memory SQLite database, discarded with the fixture.
 
     The engine is left untouched here. Flask-SQLAlchemy already hands an
     in-memory SQLite URL the single-connection pool it needs, and an explicit
     pool size for one is rejected — a size of 0 by its own check, any size by
     SQLAlchemy, whose StaticPool takes none — so naming a pool option would
     conflict with it.
-    """
+    '''
 
     TESTING: bool = True
     SQLALCHEMY_DATABASE_URI: str = 'sqlite:///:memory:'
 
 
 class ProdConfig(Config):
-    """Production settings: DATABASE_URL must come from the environment."""
+    '''Production settings: DATABASE_URL must come from the environment.'''
 
     SQLALCHEMY_DATABASE_URI = _DatabaseURL()

@@ -22,7 +22,7 @@ from api.models import Tracks, YearlyAvg
 
 
 class CompatFlaskClient(FlaskClient):
-    """`FlaskClient` for the pinned Flask 2.0.1 / Werkzeug 2.2.3 pair.
+    '''`FlaskClient` for the pinned Flask 2.0.1 / Werkzeug 2.2.3 pair.
 
     Flask 2.0.1 forwards Werkzeug's retired `as_tuple` keyword, which Werkzeug
     2.2.3 no longer declares: the keyword falls through to `EnvironBuilder`
@@ -45,7 +45,7 @@ class CompatFlaskClient(FlaskClient):
       answered. The keyword cannot be forwarded - Werkzeug 2.2 removed it and
       its client always returns a `TestResponse` alone - so the pair is
       assembled here from the request the response was produced from.
-    """
+    '''
 
     def open(self, *args, **kwargs):
         # keyword-only in Flask's own signature, so they leave **kwargs

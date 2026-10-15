@@ -7,8 +7,9 @@ import pytest
 import api.funcs as funcs
 from api.funcs import get_query_week, get_rolling_avg, get_weekly_data
 
-# Six consecutive chart years. The helper's window spans five rows, so the first
-# four rows have no rolling mean and only the last two appear in the result.
+# Six consecutive chart years. The helper's window spans five rows, so the
+# first four rows have no rolling mean and only the last two appear in the
+# result.
 YEARLY_TEMPOS = [
     {'year': str(year), 'tempo': float(tempo)}
     for year, tempo in zip(range(2015, 2021), range(100, 160, 10))
@@ -45,11 +46,11 @@ EXPECTED_AVERAGES = [
 
 
 def _frozen_datetime(frozen: datetime) -> type[datetime]:
-    '''Builds a datetime whose now() and today() always report the frozen instant.
+    '''Builds a datetime whose now() and today() report the frozen instant.
 
-    api.funcs resolves both through its module-level `datetime` name, so patching
-    that name with this subclass freezes the wall clock the helper compares
-    against 10:00 without touching the real clock.
+    api.funcs resolves both through its module-level `datetime` name,
+    so patching that name with this subclass freezes the wall clock
+    the helper compares against 10:00 without touching the real clock.
     '''
 
     class FrozenDateTime(datetime):
@@ -68,7 +69,7 @@ def _frozen_datetime(frozen: datetime) -> type[datetime]:
 def test_get_query_week_buckets_every_weekday_to_its_chart_saturday():
     expected_weeks = {
         '2021-11-13': '2021-11-13',  # Saturday keeps its own week
-        '2021-11-14': '2021-11-13',  # Sunday still belongs to the previous chart
+        '2021-11-14': '2021-11-13',  # Sunday belongs to the previous chart
         '2021-11-15': '2021-11-13',  # Monday
         '2021-11-16': '2021-11-13',  # Tuesday
         '2021-11-18': '2021-11-20',  # Thursday

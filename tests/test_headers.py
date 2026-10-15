@@ -4,9 +4,10 @@
 own headers to whatever a route answered with: ``X-Content-Type-Options`` and
 ``X-Frame-Options`` on every response, and ``Cache-Control: no-store`` on the
 JSON API alone, so the API's answers are never cached while the static index
-document keeps the policy Flask gives it. No other module in this suite reads a
-header, so without this one the hook could be dropped, narrowed to one route or
-widened to the static document and every test would still pass.
+document keeps the policy Flask gives it. No other module in this suite asserts
+a header this hook sets, so without this one the hook could be dropped,
+narrowed to one route or widened to the static document and every test would
+still pass.
 
 Each test drives the real request path through the ``client`` fixture. The hook
 runs on the response the route itself produced rather than on a fabricated one,

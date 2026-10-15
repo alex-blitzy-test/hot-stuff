@@ -93,11 +93,8 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
 
     /*
      * Every report — blank field, request in flight, failed search or completed
-     * one — supersedes the summary request before it, so that request is stopped
-     * here instead of running to completion and having its body parsed for a
-     * reply this handler would drop. An abort rejects with no response, and the
-     * identity guard below is what keeps that rejection from being read as a
-     * failure of the live request.
+     * one — stops the previous summary request here instead of letting it run to
+     * completion for a reply this handler would drop.
      */
     summaryRequestRef.current?.abort();
     summaryRequestRef.current = null;
@@ -161,13 +158,9 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
           return;
         }
         /*
-         * ApiError is raised only for a failure that carried an HTTP response,
-         * and its message is that response's status text — the same copy the
-         * Tracks and Trends panels have always shown. A rejection without a
-         * response, an unreachable backend, arrives here unwrapped and has no
-         * status text to report, so it is named with the client's shared
-         * `UNREACHABLE_MESSAGE` instead of being swallowed: this panel settles
-         * on a message rather than sitting on its loading marker.
+         * The copy the Tracks and Trends panels show — except that a failure
+         * with no response is reported here rather than leaving the card
+         * silent: it settles on the client's shared `UNREACHABLE_MESSAGE`.
          */
         setSummaryError(
           err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE

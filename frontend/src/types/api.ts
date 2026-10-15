@@ -55,7 +55,10 @@ export interface WeekResponse {
   week: string;
   songs: Track[];
   averages: FeatureAverage[];
-  /** Mean tempo rounded to a whole number. */
+  /**
+   * Mean tempo as a whole number: the weekly mean is truncated toward zero,
+   * not rounded, so a mean of 120.9 arrives as 120.
+   */
   avgTempo: number;
 }
 
