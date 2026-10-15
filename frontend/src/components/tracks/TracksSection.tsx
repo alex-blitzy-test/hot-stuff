@@ -3,7 +3,7 @@ import DatePicker from './DatePicker';
 import Radar from './RadarChart';
 import Hamburger from '../navigation/Hamburger';
 import { getWeek, ApiError } from '../../api/client';
-import { WeekResponse } from '../../types/api';
+import type { WeekResponse } from '../../types/api';
 
 type TracksSectionProps = { showNav: () => void };
 

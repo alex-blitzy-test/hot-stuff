@@ -37,8 +37,8 @@ def create_app(config: type[Config] | None = None) -> Flask:
     app = Flask(__name__, static_folder='../frontend/dist',
                 static_url_path='/')
 
-    # applied before the extensions are bound: Flask-SQLAlchemy builds its
-    # engine eagerly at init_app, so the URI has to be in place first
+    # applied before the extensions are bound so init_app's defaults and
+    # deprecation check see the values and the first engine use finds the URI
     app.config.from_object(config_class)
     db.init_app(app)
     ma.init_app(app)

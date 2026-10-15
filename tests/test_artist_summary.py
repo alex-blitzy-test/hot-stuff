@@ -10,6 +10,9 @@ request is the only deterministic choice.
 
 import pytest
 
+from api import db
+from api.models import Tracks
+
 # The shared seed (tests/conftest.py) holds four chart appearances: Artist One
 # over two tracks and three weeks, and Artist Two sharing the newest week.
 # `total_weeks` and `unique_tracks` are distinct counts over the matched rows -
@@ -134,3 +137,52 @@ def test_summary_for_an_unmatched_artist_is_empty_rather_than_an_error(client):
         'last_week': None,
         'avg_features': {},
     }
+
+
+# A single appearance carrying a NULL week. `week` is nullable, and SQL counts
+# DISTINCT over non-NULL values only, so this row contributes 0 to the
+# distinct-week count while being a matched row. Its feature values are dyadic
+# rationals whose percentages are exact, so the weekly helper's integer means
+# are the row's own values.
+NULL_WEEK_APPEARANCE = {
+    'id': 5, 'week': None, 'rank': 7,
+    'track': 'Track D', 'artist': 'Null Week Artist', 'spotify_id': 'sid-d',
+    'tempo': 100.0, 'energy': 0.50, 'danceability': 0.25,
+    'valence': 0.75, 'liveness': 0.10, 'speechiness': 0.75,
+    'acousticness': 0.50, 'instrumentalness': 0.25, 'loudness': -8.0,
+}
+
+# No week to count and no week to bound, but the matched row still carries
+# features, so `avg_features` is that row's own values.
+NULL_WEEK_SUMMARY = {
+    'artist': 'Null Week Artist',
+    'total_weeks': 0,
+    'unique_tracks': 1,
+    'best_rank': 7,
+    'first_week': None,
+    'last_week': None,
+    'avg_features': {
+        'energy': 50,
+        'danceability': 25,
+        'speechiness': 75,
+        'acousticness': 50,
+        'instrumentalness': 25,
+        'tempo': 100,
+    },
+}
+
+
+def test_summary_reports_a_matched_row_whose_week_is_null(app, client):
+    '''The empty-match guard keys on the matched rows, not on weeks.
+
+    `week` is nullable and the guard's premise is "rows matched", so an artist
+    whose matched rows all carry a NULL week must still report features: the
+    distinct-week count of 0 describes the weeks, not the match.
+    '''
+    db.session.add(Tracks(**NULL_WEEK_APPEARANCE))
+    db.session.commit()
+
+    response = client.get('/api/artist/Null%20Week%20Artist/summary')
+
+    assert response.status_code == 200
+    assert response.get_json() == NULL_WEEK_SUMMARY
