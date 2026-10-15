@@ -37,7 +37,8 @@ const EMPTY_METRIC = '—';
  * null weeks, so those are rendered as an em dash rather than as "null", and the
  * feature list collapses to the same dash instead of an empty line.
  * The best rank is the card's headline figure, so it is the one entry marked as
- * such: it is the same figure the ranked rows present at the larger `.rank` size.
+ * such: it is the one value rendered at the card's 25px headline size, flush
+ * with the other five values in the card's single value column.
  * `Object.entries` visits the keys in the order the response body carried them,
  * so the feature list reads the same on every render of a given payload.
  */
@@ -232,7 +233,7 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
               <div className='artistSummaryRow' key={metric.label}>
                 <span className='artistSummaryLabel'>{metric.label}</span>
                 <span
-                  className={metric.headline ? 'rank' : 'artistSummaryValue'}
+                  className={metric.headline ? 'artistSummaryHeadline' : 'artistSummaryValue'}
                 >
                   {metric.value}
                 </span>

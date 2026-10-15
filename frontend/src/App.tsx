@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { MouseEvent } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import TracksSection from './components/tracks/TracksSection';
 import TrendsSection from './components/trends/TrendsSection';
 import ArtistsSection from './components/artists/ArtistsSection';
@@ -14,7 +14,9 @@ function App() {
   const showNav = () => {
     setNav(!nav);
   };
-  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
+  const handleClick = (
+    e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>
+  ) => {
     const index = parseInt(e.currentTarget.id, 0);
     if (index !== activeTab) {
       setActiveTab(index);

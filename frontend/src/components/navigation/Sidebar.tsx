@@ -1,10 +1,12 @@
-import type { MouseEvent } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import styled from 'styled-components';
 import Tab from './Tab';
 import SmallTab from './SmallTab';
 
 type SidebarProps = {
-  handleClick: (e: MouseEvent<HTMLDivElement>) => void;
+  handleClick: (
+    e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>
+  ) => void;
   activeTab: number;
   nav?: boolean;
   openNav?: () => void;
@@ -13,25 +15,67 @@ type SidebarProps = {
 
 const Sidebar = (props: SidebarProps) => {
   const { handleClick, activeTab, className } = props;
+
+  // A keyboard activation of a tab goes through the same handler the mouse
+  // uses, so both devices take the identical path into the tab state.
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(e);
+    }
+  };
+
   return (
     <div className={className}>
       <div className='titleContainer sidebarHeader'>
         <div className='titleContent'>Hot Stuff</div>
       </div>
       <div className='tabContainer'>
-        <div>
-          <Tab onClick={handleClick} activeTab={activeTab === 0} id='0'>
+        <div role='tablist' aria-label='Charts'>
+          <Tab
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role='tab'
+            tabIndex={0}
+            aria-selected={activeTab === 0}
+            activeTab={activeTab === 0}
+            id='0'
+          >
             Tracks
           </Tab>
-          <Tab onClick={handleClick} activeTab={activeTab === 1} id='1'>
+          <Tab
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role='tab'
+            tabIndex={0}
+            aria-selected={activeTab === 1}
+            activeTab={activeTab === 1}
+            id='1'
+          >
             Trends
           </Tab>
-          <Tab onClick={handleClick} activeTab={activeTab === 2} id='2'>
+          <Tab
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role='tab'
+            tabIndex={0}
+            aria-selected={activeTab === 2}
+            activeTab={activeTab === 2}
+            id='2'
+          >
             Artists
           </Tab>
         </div>
-        <div className='lowerTabs'>
-          <SmallTab onClick={handleClick} activeTab={activeTab === 3} id='3'>
+        <div className='lowerTabs' role='tablist' aria-label='Application'>
+          <SmallTab
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role='tab'
+            tabIndex={0}
+            aria-selected={activeTab === 3}
+            activeTab={activeTab === 3}
+            id='3'
+          >
             About
           </SmallTab>
         </div>
@@ -51,16 +95,21 @@ const StSidebar = styled(Sidebar)<{ nav?: boolean }>`
   z-index: 2;
   transition: opacity 0.5s;
 
-  /* The closed rail is hidden by opacity alone, which does not take it out of
-     hit testing: at z-index 2 its fixed 35vw by full-height box stays the
-     topmost target over the panel's own controls. Pointer input therefore
-     follows the same nav signal the opacity does, and the breakpoint below,
-     where the rail is permanently visible, restores it. */
-  ${(props) => (props.nav ? 'opacity: 1;' : 'opacity: 0; pointer-events: none;')};
+  /* The closed rail is hidden by opacity alone, which leaves it interactable:
+     its fixed 35vw by full-height box stays the topmost target over the panel's
+     own controls, and its focusable tabs would still be reachable by Tab while
+     invisible. Pointer input therefore follows the same nav signal the opacity
+     does, and visibility takes the closed rail out of the tab order; the
+     breakpoint below, where the rail is permanently visible, restores both. */
+  ${(props) =>
+    props.nav
+      ? 'opacity: 1; visibility: visible;'
+      : 'opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.5s, visibility 0s linear 0.5s;'};
 
   @media only screen and (min-width: 800px) {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
     width: 15vw;
   }
 `;

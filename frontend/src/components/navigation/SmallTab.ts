@@ -13,6 +13,11 @@ const SmallTab = styled.div<{ activeTab?: boolean }>`
   :hover {
     ${(props) => (props.activeTab ? '' : 'color: rgb(128, 103, 220)')};
   }
+
+  :focus-visible {
+    outline: 2px solid var(--purp);
+    outline-offset: 2px;
+  }
 `;
 
 export default SmallTab;
