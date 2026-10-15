@@ -11,6 +11,12 @@
  * Flask server, and in production Flask serves both the SPA and the API from
  * the same origin, so no absolute host is ever needed.
  *
+ * Every path segment below goes into the path through `encodeURIComponent`: a
+ * value carrying `/`, `?` or `#` would otherwise address a different rule,
+ * truncate the path or append a query. It is a no-op for the ISO dates, base-62
+ * Spotify ids and feature names these callers send, and is kept because artist
+ * names carry spaces, commas and ampersands.
+ *
  * The module also owns the request's lifecycle, because it owns the transport:
  * one module-wide timeout bounds every call, and each function takes an
  * optional `AbortSignal` so a caller that owns a superseded view can cancel the
@@ -106,12 +112,8 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 /**
- * One week of the chart: `GET /api/week/<week>`.
- *
- * The week is a single path segment, so it is percent-encoded here exactly as
- * the artist segment is in {@link getArtist}: a value carrying `/`, `?` or `#`
- * would otherwise address a different rule, truncate the path or append a
- * query. The encoding is a no-op for the ISO dates the date picker produces.
+ * One week of the chart: `GET /api/week/<week>`, the week encoded as a single
+ * path segment; an ISO date carries nothing to escape.
  */
 export async function getWeek(week: string, signal?: AbortSignal): Promise<WeekResponse> {
   return get<WeekResponse>(`/api/week/${encodeURIComponent(week)}`, signal);
@@ -119,25 +121,18 @@ export async function getWeek(week: string, signal?: AbortSignal): Promise<WeekR
 
 /**
  * Every chart appearance by artists matching `artist`:
- * `GET /api/artist/<artist>`.
- *
- * The artist is a single path segment on the server even though names carry
- * spaces, commas and ampersands, so the segment is percent-encoded here. The
- * endpoint itself matches case-insensitively on a partial name and answers with
- * a bare array, empty when nothing matches.
+ * `GET /api/artist/<artist>`, the name encoded as a single path segment even
+ * though it carries spaces, commas and ampersands. The endpoint matches
+ * case-insensitively on a partial name and answers with a bare array, empty
+ * when nothing matches.
  */
 export async function getArtist(artist: string, signal?: AbortSignal): Promise<Track[]> {
   return get<Track[]>(`/api/artist/${encodeURIComponent(artist)}`, signal);
 }
 
 /**
- * Every chart appearance of one track: `GET /api/track/<spotify_id>`.
- *
- * The Spotify id is a single path segment, so it is percent-encoded here
- * exactly as the artist segment is in {@link getArtist} and
- * {@link getArtistSummary}: an id carrying `/`, `?` or `#` would otherwise
- * address a different rule, truncate the path or append a query. The encoding
- * is a no-op for the base-62 ids Spotify issues.
+ * Every chart appearance of one track: `GET /api/track/<spotify_id>`, the id
+ * encoded as a single path segment; a base-62 id carries nothing to escape.
  *
  * Ordered by rank on the server, so a caller that needs chart order sorts by
  * `week` itself.
@@ -147,12 +142,8 @@ export async function getTrack(spotifyId: string, signal?: AbortSignal): Promise
 }
 
 /**
- * One feature's yearly means and rolling average: `GET /api/analysis/<feature>`.
- *
- * The feature is a single path segment, so it is percent-encoded here exactly
- * as the artist segment is in {@link getArtist}: a value carrying `/`, `?` or
- * `#` would otherwise address a different rule, truncate the path or append a
- * query. The encoding is a no-op for the seven names the feature select offers.
+ * One feature's yearly means and rolling average: `GET /api/analysis/<feature>`,
+ * the feature encoded as a single path segment.
  *
  * A feature outside the server's allow-list answers 400 and arrives here as an
  * `ApiError` carrying that status and body.
@@ -165,11 +156,10 @@ export async function getAnalysis(
 }
 
 /**
- * An artist's chart history aggregated: `GET /api/artist/<artist>/summary`.
- *
- * The artist segment is encoded exactly as in {@link getArtist}. A search that
- * matched nothing is a success whose counts are zero, whose rank and week
- * fields are null and whose `avg_features` is empty.
+ * An artist's chart history aggregated: `GET /api/artist/<artist>/summary`, the
+ * artist encoded as a single path segment. A search that matched nothing is a
+ * success whose counts are zero, whose rank and week fields are null and whose
+ * `avg_features` is empty.
  */
 export async function getArtistSummary(
   artist: string,

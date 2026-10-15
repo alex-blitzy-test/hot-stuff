@@ -47,12 +47,12 @@ function byWeekAscending(a: Track, b: Track): number {
  * towards the top of the chart as the track climbs, exactly as a chart reader
  * expects, and rank 100 sits at the bottom.
  *
- * Unlike the two older charts, which build their amCharts instance in the
- * render body and leave it undisposed, this one builds it inside an effect
- * keyed on the Spotify id and disposes it in the effect's cleanup. The chart
- * outlives no selection: picking a different track row disposes the previous
- * instance before the new one is built, so the host element never accumulates
- * axes, series or a second chart.
+ * Unlike the Tracks radar chart and the Trends line chart, which build their
+ * amCharts instance in the render body and leave it undisposed, this one
+ * builds it inside an effect keyed on the Spotify id and disposes it in the
+ * effect's cleanup. The chart outlives no selection: picking a different
+ * track row disposes the previous instance before the new one is built, so
+ * the host element never accumulates axes, series or a second chart.
  *
  * The request behind the chart is this component's own, so its failure is too:
  * a rejected `getTrack` leaves the host empty and renders the reason above it,
@@ -62,10 +62,8 @@ function byWeekAscending(a: Track, b: Track): number {
 export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.Element {
   const { spotifyId } = props;
 
-  // The failure of this component's own request. The chart owns the `getTrack`
-  // call, so it owns the outcome: a failure is rendered here rather than
-  // reported up, because the failure of a rank-history request must not disturb
-  // the search results the user is still reading.
+  // The failure of this component's own `getTrack` request, rendered above the
+  // host rather than lifted to the container.
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -180,7 +178,7 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
 
   return (
     <>
-      {/* The house error marker — the same centred `<h1 className='error'>` the
+      {/* The house error marker — the shared `<h1 className='error'>` the
           panels render — sits above the host, which keeps its id and its inline
           style untouched: a failed request leaves the chart region as it is and
           states the failure in the space above it. */}

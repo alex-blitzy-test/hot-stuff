@@ -2,12 +2,10 @@
 /venv
 /data
 /frontend/dist
-# The retired Create React App output is excluded by name, not by path: these
-# patterns match whole paths from the context root, and naming the path would
-# put the retired path string back into the tree.
+# Generated build output never enters the build context: the pattern is matched
+# by directory name, so it excludes a build directory at any depth.
 **/build
 /.git
-/blitzy
 # the host's development environment file stays out of the build context, so
 # the container's configuration comes only from its own environment and no
 # setting in it is resolved from a file at run time

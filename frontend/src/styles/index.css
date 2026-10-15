@@ -362,9 +362,10 @@ body {
 }
 
 /* The Artists result row is a selection control: it adds the pointer
-   affordance and the interaction states the frozen `.trackRow`/`.rowEl` row
-   language has no rule for. `.rowEl` keeps its `cursor: default` everywhere
-   else; inside this row the whole area is clickable. */
+   affordance and the interaction states the shared `.trackRow`/`.rowEl` row
+   language the Tracks tab uses has no rule for. `.rowEl` keeps its
+   `cursor: default` everywhere else; inside this row the whole area is
+   clickable. */
 .artistTrackRow,
 .artistTrackRow .rowEl {
   cursor: pointer;

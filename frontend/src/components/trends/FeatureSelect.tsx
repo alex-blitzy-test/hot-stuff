@@ -2,9 +2,9 @@ import { useState } from 'react';
 
 interface FeatureSelectProps {
   submitFunc: (value: string) => void;
-  /* Declared but unread: the parent's call site passes initValue='tempo' and that
-     call site's text is frozen, so the prop stays in the call surface without
-     seeding the selection. */
+  /* Declared but unread: the parent's call site passes initValue, and the panel's
+     initial feature is the parent's to choose, so the prop stays in the call
+     surface without seeding the selection. */
   initValue?: string;
 }
 

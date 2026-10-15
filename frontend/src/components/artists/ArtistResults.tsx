@@ -149,10 +149,10 @@ const ArtistResultRow = memo(function ArtistResultRow(
   };
 
   return (
-    // The row is itself the selection control, exactly as the ranked rows
-    // of the Tracks tab are, and it carries the control semantics that make
-    // it reachable without a pointer: focusable, marked while its chart is
-    // displayed, and activated by Enter or Space as well as by a click.
+    // The row carries the same `.trackRow` markup the Tracks tab
+    // established, and adds the control semantics that make it reachable
+    // without a pointer: focusable, marked while its chart is displayed,
+    // and activated by Enter or Space as well as by a click.
     <div
       className='trackRow artistTrackRow'
       role='button'

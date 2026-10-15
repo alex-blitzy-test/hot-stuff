@@ -4,8 +4,7 @@ import react from '@vitejs/plugin-react';
 
 // The Flask API the dev server proxies /api to. Defaults to the documented
 // http://localhost:5000. Set API_PROXY_TARGET in the environment to point the
-// dev server at an API running on a different port (see the per-clone port
-// block in the setup instructions).
+// dev server at an API running on a different port.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'API_');
 
