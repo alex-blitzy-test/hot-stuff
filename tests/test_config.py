@@ -12,8 +12,12 @@ regresses into a wrong default or into a silent production configuration.
 The environment each test depends on is set through ``monkeypatch`` and no
 application is built at import, so neither collection nor the result depends on
 the ambient ``DATABASE_URL`` or ``FLASK_ENV`` - pytest loads no ``.flaskenv``.
-Nothing here opens a socket or a database connection: the assertions read
-``app.config`` values only.
+No test here needs a database to be running. The rejection test's two local
+connection attempts are its own - a port on localhost that nothing answers
+(``postgresql://...@127.0.0.1:59999/nope``) and a SQLite path inside a directory
+that does not exist, both refused within milliseconds - the two tests that assert
+which configuration is selected replace the start-up probe instead of connecting,
+and every other assertion reads ``app.config`` values only.
 '''
 
 import importlib
@@ -21,12 +25,33 @@ import importlib
 import pytest
 from flask import Flask
 
+import api
 from api import create_app
 from api.config import DevConfig, ProdConfig, TestConfig
 
 # A URL this module supplies itself, so the assertion that follows cannot pass
 # by echoing whatever the ambient environment happened to hold.
 SUPPLIED_URL = 'sqlite:///:memory:'
+
+# The five shapes a present-but-unusable connection string arrives in, all of
+# which the start-up probe has to reject: whitespace that is not a URL at all, a
+# string carrying no scheme, a scheme this application has no dialect for, a
+# SQLite path whose directory does not exist, and a port nothing answers on.
+# Rejecting the last two needs a connection attempt, not a parse, which is the
+# reason the probe connects; both fail locally and within milliseconds, so no
+# database has to be reachable for this test to run.
+UNUSABLE_DATABASE_URLS = [
+    pytest.param('   ', id='blank'),
+    pytest.param('not-a-url', id='not-a-url'),
+    pytest.param('redis://localhost:6379/0', id='redis-scheme'),
+    pytest.param(
+        'sqlite:////nonexistent-dir-xyz/probe.db', id='sqlite-missing-dir'
+    ),
+    pytest.param(
+        'postgresql://postgres:postgres@127.0.0.1:59999/nope',
+        id='pg-port-refused',
+    ),
+]
 
 
 def test_prod_config_fails_fast_without_database_url(monkeypatch):
@@ -36,7 +61,36 @@ def test_prod_config_fails_fast_without_database_url(monkeypatch):
         create_app(ProdConfig)
 
 
-def test_dev_config_defaults_to_the_compose_database(monkeypatch):
+@pytest.mark.parametrize(
+    'config_class',
+    [
+        pytest.param(DevConfig, id='development'),
+        pytest.param(ProdConfig, id='production'),
+    ],
+)
+@pytest.mark.parametrize('unusable_url', UNUSABLE_DATABASE_URLS)
+def test_unusable_database_url_is_rejected_at_startup(
+    monkeypatch, config_class, unusable_url
+):
+    '''No unusable value survives construction, under either deployment.'''
+    monkeypatch.setenv('DATABASE_URL', unusable_url)
+
+    with pytest.raises(RuntimeError, match='DATABASE_URL'):
+        create_app(config_class)
+
+
+@pytest.fixture
+def no_running_database(monkeypatch):
+    # The probe has its own test above. The two tests below it assert which
+    # configuration was selected, which is a question about the selector and not
+    # about whether a database is up, so the probe stands down for them: the
+    # development default is read and compared without being connected to.
+    monkeypatch.setattr(api, 'check_database_url', lambda url: None)
+
+
+def test_dev_config_defaults_to_the_compose_database(
+    monkeypatch, no_running_database
+):
     monkeypatch.delenv('DATABASE_URL', raising=False)
 
     app = create_app(DevConfig)
@@ -50,7 +104,9 @@ def test_dev_config_defaults_to_the_compose_database(monkeypatch):
     assert uri.endswith('@postgres/db')
 
 
-def test_flask_env_development_selects_dev_config(monkeypatch):
+def test_flask_env_development_selects_dev_config(
+    monkeypatch, no_running_database
+):
     monkeypatch.delenv('DATABASE_URL', raising=False)
     monkeypatch.setenv('FLASK_ENV', 'development')
 

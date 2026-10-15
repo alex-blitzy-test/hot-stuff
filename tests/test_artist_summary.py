@@ -193,9 +193,9 @@ def test_summary_reports_a_matched_row_whose_week_is_null(app, client):
 # Two appearances whose helper input carries a whole NULL column: five feature
 # columns NULL with tempo present, and tempo NULL with the five features
 # present. Both carry a week and a rank, so every aggregate reports the row.
-# Either shape leaves the weekly helper a column it cannot average, and both
-# are matched rows all the same, so the term is still answered - with the empty
-# `avg_features` a term matching nothing answers.
+# Either shape leaves the weekly helper a feature it cannot average, and both
+# are matched rows all the same, so the term is still answered - with every
+# feature the row can supply and only the uncastable one left out.
 NULL_FEATURE_APPEARANCE = {
     'id': 6, 'week': date(2021, 11, 13), 'rank': 4,
     'track': 'Track E', 'artist': 'Null Feature Artist',
@@ -214,11 +214,26 @@ NULL_TEMPO_APPEARANCE = {
     'instrumentalness': 0.50, 'loudness': -6.0,
 }
 
-# The two shapes differ only in which column is NULL, so one parameterised
-# case covers both: a single appearance of its own artist, one distinct week
-# and one distinct track, the row's own rank, both week bounds the row's ISO
-# week, and no averages at all.
-NULL_COLUMN_CASES = [
+# One appearance whose energy is beyond what a percentage can represent: the
+# mean is finite, but the helper's `int(mean * 100)` has no integer to cast it
+# to, which is an OverflowError rather than the ValueError a NULL column
+# raises. The other five values are dyadic rationals whose percentages are
+# exact, so each settled feature is the row's own value.
+OVERFLOW_APPEARANCE = {
+    'id': 8, 'week': date(2021, 11, 13), 'rank': 5,
+    'track': 'Track G', 'artist': 'Overflow Artist',
+    'spotify_id': 'sid-g', 'tempo': 100.0, 'energy': 1e308,
+    'danceability': 0.25, 'valence': 0.40, 'liveness': 0.20,
+    'speechiness': 0.75, 'acousticness': 0.50,
+    'instrumentalness': 0.25, 'loudness': -6.0,
+}
+
+# The three shapes differ only in which feature the helper's arithmetic cannot
+# settle - a NULL column each way, and a magnitude too large to cast - so one
+# parameterised case covers them: a single appearance of its own artist, one
+# distinct week and one distinct track, the row's own rank, both week bounds
+# the row's ISO week, and the features the row can supply.
+UNSETTLEABLE_FEATURE_CASES = [
     (NULL_FEATURE_APPEARANCE, '/api/artist/Null%20Feature%20Artist/summary', {
         'artist': 'Null Feature Artist',
         'total_weeks': 1,
@@ -226,7 +241,7 @@ NULL_COLUMN_CASES = [
         'best_rank': 4,
         'first_week': '2021-11-13',
         'last_week': '2021-11-13',
-        'avg_features': {},
+        'avg_features': {'tempo': 120},
     }),
     (NULL_TEMPO_APPEARANCE, '/api/artist/Null%20Tempo%20Artist/summary', {
         'artist': 'Null Tempo Artist',
@@ -235,19 +250,42 @@ NULL_COLUMN_CASES = [
         'best_rank': 6,
         'first_week': '2021-11-13',
         'last_week': '2021-11-13',
-        'avg_features': {},
+        'avg_features': {
+            'energy': 50,
+            'danceability': 50,
+            'speechiness': 50,
+            'acousticness': 50,
+            'instrumentalness': 50,
+        },
+    }),
+    (OVERFLOW_APPEARANCE, '/api/artist/Overflow%20Artist/summary', {
+        'artist': 'Overflow Artist',
+        'total_weeks': 1,
+        'unique_tracks': 1,
+        'best_rank': 5,
+        'first_week': '2021-11-13',
+        'last_week': '2021-11-13',
+        'avg_features': {
+            'danceability': 25,
+            'speechiness': 75,
+            'acousticness': 50,
+            'instrumentalness': 25,
+            'tempo': 100,
+        },
     }),
 ]
 
 
-@pytest.mark.parametrize('row, path, expected', NULL_COLUMN_CASES)
-def test_summary_answers_a_column_that_is_null_across_the_match(
+@pytest.mark.parametrize('row, path, expected', UNSETTLEABLE_FEATURE_CASES)
+def test_summary_settles_the_features_the_weekly_helper_cannot_average(
         app, client, row, path, expected):
-    '''A column the helper cannot average is not a failed request.
+    '''A feature the helper cannot average is not a failed request.
 
-    The weekly helper derives each `avg_features` value from a mean, which a
-    column that is NULL throughout its input cannot supply, so the matched set
-    keeps the empty object the unmatched case reports instead of raising.
+    The weekly helper averages the six features in one pass and casts each
+    mean, so a column that is NULL across the whole match - or a mean whose
+    percentage has no integer to cast to - costs the rows every feature they
+    could supply. The matched set keeps the features it can settle and leaves
+    only the uncastable one out, instead of raising or discarding the rest.
     '''
     db.session.add(Tracks(**row))
     db.session.commit()

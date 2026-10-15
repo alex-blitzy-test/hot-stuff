@@ -50,3 +50,19 @@ def test_static_index_keeps_its_own_cache_policy(client):
     assert response.headers['X-Content-Type-Options'] == 'nosniff'
     assert response.headers['X-Frame-Options'] == 'DENY'
     assert response.headers['Cache-Control'] == 'no-cache'
+
+
+def test_static_index_carries_no_date_of_its_own(client):
+    '''The HTTP/WSGI server supplies the single Date the answer goes out with.
+
+    The index document is served through Werkzeug's ``send_static_file``,
+    whose conditional path stamps a ``Date`` onto the response the application
+    returns; the server that sends that response writes its own ``Date`` as
+    well, so both would reach the client on the same static answer. The hook
+    removes the application's copy so exactly one is sent, as every JSON route
+    of this application already does.
+    '''
+    response = client.get('/')
+
+    assert response.status_code == 200
+    assert 'Date' not in response.headers

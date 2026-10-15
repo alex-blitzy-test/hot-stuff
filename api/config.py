@@ -12,6 +12,10 @@ is unset or empty.
 
 import os
 
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.exc import SQLAlchemyError
+
 # Development default: the postgres service docker-compose.yml declares
 # (POSTGRES_USER/POSTGRES_PASSWORD 'postgres', POSTGRES_DB 'db').
 _DEV_DATABASE_URL = 'postgresql://postgres:postgres@postgres/db'
@@ -73,3 +77,38 @@ class ProdConfig(Config):
     '''Production settings: DATABASE_URL must come from the environment.'''
 
     SQLALCHEMY_DATABASE_URI = _DatabaseURL()
+
+
+def check_database_url(url: str) -> None:
+    '''Raise unless this process can use the connection string.
+
+    SQLAlchemy opens its connection lazily, inside the first request that reads
+    the database, so without this the constructor would accept any string at all
+    — malformed, unreachable, or naming a dialect this application has no driver
+    for — and a misconfigured deployment would start happily and answer HTTP 500
+    to its first caller, with the cause visible nowhere but the server log.
+
+    Exercising the value here moves that failure to construction, where the
+    operator sees it. Connecting is what catches all of it: parsing alone accepts
+    an unregistered scheme, and only a connection attempt reports a missing
+    directory or a refused port. The connection is closed again immediately, so
+    the check costs one round trip and leaves no pool behind.
+
+    What fails is re-raised as a ``RuntimeError`` naming the variable the operator
+    has to correct, with SQLAlchemy's own message chained as its cause; this
+    wrapper adds no copy of the string itself. The message is written for the
+    process's own log at construction, and never reaches a response, because no
+    request exists yet.
+    '''
+    engine: Engine | None = None
+    try:
+        engine = create_engine(url)
+        with engine.connect():
+            pass
+    except (SQLAlchemyError, ImportError, ValueError, OSError) as exc:
+        raise RuntimeError(
+            f'DATABASE_URL is not a usable connection string: {exc}'
+        ) from exc
+    finally:
+        if engine is not None:
+            engine.dispose()

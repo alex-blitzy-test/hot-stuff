@@ -1,3 +1,7 @@
+from math import isfinite
+from typing import Any
+
+import pandas as pd
 from flask import Blueprint, Response, jsonify, redirect
 from api.models import Tracks, TrackSchema, YearlyAvg, YearlyAvgSchema
 from sqlalchemy import func
@@ -22,6 +26,31 @@ SUMMARY_FEATURES: tuple[str, ...] = (
 # registered by create_app, which passes no prefix: a prefix given to
 # register_blueprint replaces this one instead of extending it
 bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def _computable_avg_features(songs: list[dict[str, Any]]) -> dict[str, int]:
+    '''Averages the weekly features whose cast the weekly helper can make.
+
+    get_weekly_data averages SUMMARY_FEATURES in one pass and casts each mean,
+    so a single column it cannot cast costs every feature the same rows could
+    supply. This settles the features one at a time over those same rows, in
+    the helper's own order and with the helper's own arithmetic - a percentage
+    for the five averaged features and the bare mean for tempo - over a
+    DataFrame built the same way, whose mean skips NULL values. Only the
+    features whose value has no integer to cast to are left out.
+    '''
+    df = pd.DataFrame(songs)
+    features: dict[str, int] = {}
+    for feature in SUMMARY_FEATURES:
+        mean = float(df[feature].mean())
+        # the helper's cast, made on Python floats so an out-of-range
+        # percentage is infinity rather than a numpy warning: a mean NULL
+        # across the rows and a percentage too large to represent both fail
+        # the finiteness test, which is exactly the set their int() cannot take
+        value = mean if feature == 'tempo' else mean * 100
+        if isfinite(value):
+            features[feature] = int(value)
+    return features
 
 
 # api/ route redirects to current week
@@ -101,11 +130,13 @@ def get_artist_summary(artist: str) -> tuple[Response, int]:
         ]
         try:
             weeklyData = get_weekly_data(songs)
-        except ValueError:
-            # the helper cannot average a feature column that is NULL across
-            # the whole match: a matched row set is still a legal answer, so
-            # it keeps the empty features the no-match branch answers above
-            summaryObj['avg_features'] = {}
+        except (ValueError, OverflowError):
+            # the helper averages all six features in one pass, so an
+            # arithmetic failure settles only the features it affects: a
+            # column NULL across the whole match and a value too large to cast
+            # each leave their own feature out, and a matched row set is still
+            # a legal answer that keeps every computable one
+            summaryObj['avg_features'] = _computable_avg_features(songs)
         else:
             avgFeatures = {item['feature'].lower(): item['mean']
                            for item in weeklyData['averages']}
@@ -121,8 +152,8 @@ def get_avg_feature(feature: str) -> tuple[Response, int]:
     if feature not in ANALYSIS_FEATURES:
         return jsonify({'error': f'Unknown feature: {feature}'}), 400
     returnObj = {}
-    resultObj = YearlyAvg.query.with_entities(YearlyAvg.year,
-                                              getattr(YearlyAvg, feature))
+    resultObj = YearlyAvg.query.with_entities(
+        YearlyAvg.year, getattr(YearlyAvg, feature)).order_by(YearlyAvg.year)
     data = yearly_schema.dump(resultObj)
     dataDict = get_rolling_avg(data)
     returnObj['feature'] = feature
