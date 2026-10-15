@@ -333,6 +333,7 @@ body {
   border-radius: 3px;
   background-color: var(--dark-3);
   color: var(--light);
+  overflow-wrap: anywhere;
 }
 
 .artistSummaryRow {
@@ -352,40 +353,4 @@ body {
   font-size: 13px;
   font-weight: 500;
   color: var(--light);
-}
-
-/* The summary card's headline figure — the best rank — takes the emphasis
-   `.rank` already uses in the ranked rows, so the card has a hierarchy. */
-.artistSummaryHeadline {
-  font-size: 25px;
-  font-weight: 500;
-}
-
-/* The Artists result row is a selection control: it adds the pointer
-   affordance and the interaction states the shared `.trackRow`/`.rowEl` row
-   language the Tracks tab uses has no rule for. `.rowEl` keeps its
-   `cursor: default` everywhere else; inside this row the whole area is
-   clickable. */
-.artistTrackRow,
-.artistTrackRow .rowEl {
-  cursor: pointer;
-}
-
-/* Hover, press and keyboard focus ring the row in the accent rather than
-   recolouring it, so the row's own text keeps the contrast it has at rest. */
-.artistTrackRow:hover,
-.artistTrackRow:focus-visible {
-  outline: 2px solid var(--purp);
-  outline-offset: -2px;
-}
-
-.artistTrackRow:active {
-  outline: 2px solid var(--purp);
-  outline-offset: -2px;
-  opacity: 0.85;
-}
-
-/* The row whose rank history is displayed. */
-.artistTrackRow[aria-pressed='true'] {
-  box-shadow: inset 3px 0 0 var(--purp);
 }

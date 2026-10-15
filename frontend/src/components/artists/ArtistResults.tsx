@@ -149,12 +149,14 @@ const ArtistResultRow = memo(function ArtistResultRow(
   };
 
   return (
-    // The row carries the same `.trackRow` markup the Tracks tab
-    // established, and adds the control semantics that make it reachable
-    // without a pointer: focusable, marked while its chart is displayed,
-    // and activated by Enter or Space as well as by a click.
+    // The row is the selection control for the chart and carries the same
+    // `.trackRow` markup the Tracks tab established: focusable, activated by
+    // Enter or Space as well as by a click, and reporting its selection
+    // through `aria-pressed`. No appended stylesheet rule styles it — the
+    // stylesheet's additions are the four `.artistSummary*` classes — so the
+    // row's appearance is exactly the shared ranked-row language.
     <div
-      className='trackRow artistTrackRow'
+      className='trackRow'
       role='button'
       tabIndex={0}
       aria-pressed={selected}

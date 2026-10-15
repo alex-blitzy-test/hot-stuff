@@ -225,11 +225,7 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
               <div className='artistSummaryRow' key={metric.label}>
                 <span className='artistSummaryLabel'>{metric.label}</span>
                 <span
-                  className={
-                    metric.headline
-                      ? 'artistSummaryValue artistSummaryHeadline'
-                      : 'artistSummaryValue'
-                  }
+                  className={metric.headline ? 'rank' : 'artistSummaryValue'}
                 >
                   {metric.value}
                 </span>
