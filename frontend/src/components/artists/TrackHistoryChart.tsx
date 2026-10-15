@@ -14,6 +14,15 @@ interface TrackHistoryChartProps {
 const CHART_ID = 'trackHistoryChart';
 const lightWhite = 'rgb(230, 230, 230)';
 
+/*
+ * What a plotted appearance says when the pointer is on it. The series binds
+ * `week` and `rank` by those names, so the template reads the data's own fields
+ * and needs no adapter: the chart's axes fix where an appearance sits without
+ * ever printing which week it was or which rank it held, and those two figures
+ * are what a reader comes to the chart for.
+ */
+const APPEARANCE_TOOLTIP = '{week}: rank {rank}';
+
 /**
  * Order two appearances by chart week, oldest first.
  *
@@ -119,6 +128,26 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       const created = am4core.create(CHART_ID, am4charts.XYChart);
       chart = created;
 
+      /*
+       * The date axis centres its last tick label on the plot area's right edge,
+       * and a label as wide as a date reaches roughly half of its width beyond
+       * that edge — so with no padding of its own the chart paints it past the
+       * host's right edge, into the space around the box the panel lays out.
+       * Reserving that half-width here ends the plot area, its last label and
+       * every mark inside the host, and leaves the axes, the series and the
+       * colours as they are.
+       */
+      created.paddingRight = 20;
+
+      /*
+       * amCharts builds its `<svg>` as an inline-level element, which sits on a
+       * line box's baseline inside the host and drags the font's descender space
+       * along with it: that is the few pixels by which the host reports more
+       * content than its own height. A block-level drawing element has no line
+       * box, so the chart ends exactly at the host's bottom edge.
+       */
+      created.paper.svg.style.display = 'block';
+
       created.data = history;
       created.dateFormatter.inputDateFormat = 'yyyy-MM-dd';
       created.dateFormatter.dateFormat = 'yyyy-MM-dd';
@@ -149,6 +178,10 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       series.strokeWidth = 2;
       series.tensionX = 0.8;
       series.stroke = am4core.color('rgb(128, 103, 220)');
+      // The series owns the tooltip instance this chart shows, so the same
+      // template is set here and on the bullet below: whichever part of the
+      // plotted appearance the pointer reaches, it reads the same figure.
+      series.tooltipText = APPEARANCE_TOOLTIP;
 
       // A line is painted along its points, so a history of exactly one
       // appearance has a path of zero length and the host stays visually empty.
@@ -164,6 +197,10 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       const bullet = new am4charts.CircleBullet();
       bullet.focusable = false;
       bullet.circle.fill = am4core.color('rgb(128, 103, 220)');
+      // The bullet's own circle is what the pointer lands on, so the template
+      // goes on the pushed bullet as well: without it only the series' tooltip
+      // exists and a mark hovered on its own would still read nothing.
+      bullet.tooltipText = APPEARANCE_TOOLTIP;
       series.bullets.push(bullet);
     }
 

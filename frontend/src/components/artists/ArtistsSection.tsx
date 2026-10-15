@@ -102,6 +102,16 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
   });
   const [selection, setSelection] = useState<ArtistTrackSelection | null>(null);
   /*
+   * How many times a result row has been activated, which is the key the chart
+   * below renders under. Selecting the row that is already selected hands the
+   * chart the Spotify id it already has, so the chart's own effect — keyed on
+   * that id — would never run again and could neither retry a failed request nor
+   * rebuild a chart. A count of activations is what tells a second activation
+   * apart from the first, and it is kept here because the activation is the
+   * container's to observe: the chart's props stay the selection's id alone.
+   */
+  const [selectionActivation, setSelectionActivation] = useState(0);
+  /*
    * The payload on screen, or `null` while the panel has none to show. One piece
    * of state rather than one per half is what makes the card and its rows a
    * single commit: a separate summary state would be set by a later render and
@@ -234,6 +244,16 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
 
   const handleSelectTrack = useCallback((next: ArtistTrackSelection) => {
     setSelection(next);
+
+    /*
+     * Counted on every activation, because the activation and not the track is
+     * what the chart must re-run its request for: a second activation of the
+     * selected row is the panel's only gesture that asks for that track's rank
+     * history again, and it is what recovers the chart once the API answers
+     * again. The count has to move before the chart renders, so the key changes
+     * in the same commit as the selection does.
+     */
+    setSelectionActivation((activation) => activation + 1);
   }, []);
 
   /*
@@ -339,7 +359,16 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
         {selection !== null && (
           <div>
             <h2 className='rowEl artist'>{selection.track}</h2>
-            <TrackHistoryChart spotifyId={selection.spotifyId} />
+            {/* Keyed on the activation count rather than on the selected track,
+                so activating a row rebuilds the chart: a fresh element means a
+                fresh effect — new request, error cleared, host rebuilt — which
+                is what re-asks for the track whose history is already on screen.
+                An unchanged Spotify id cannot carry that, because it is the same
+                on the re-activation as it was on the request that failed. */}
+            <TrackHistoryChart
+              key={selectionActivation}
+              spotifyId={selection.spotifyId}
+            />
           </div>
         )}
       </div>
