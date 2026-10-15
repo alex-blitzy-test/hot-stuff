@@ -6,7 +6,7 @@ and the route blueprint is imported inside the factory so that import cannot
 become circular.
 '''
 
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
@@ -49,6 +49,26 @@ def create_app(config: type[Config] | None = None) -> Flask:
     @app.route('/')
     def index() -> Response:
         return app.send_static_file('index.html')
+
+    # additive response hardening, sitting beside the rule it covers: the two
+    # headers below are set on every response and change no route, status,
+    # payload or extension behaviour. Strict-Transport-Security is deliberately
+    # absent, because no TLS is terminated for this application, and the Server
+    # header cannot be silenced from here - Werkzeug's HTTP handler writes it
+    # before this response object exists.
+    @app.after_request
+    def add_response_headers(response: Response) -> Response:
+        '''Adds the response headers this application owns.
+
+        Both headers are set on every response; the cache directive applies to
+        the JSON API only, so the static index document keeps the Cache-Control
+        header send_static_file already gives it.
+        '''
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        if request.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
+        return response
 
     # imported here rather than at module level: the blueprint decorates
     # against objects this module has to define first
