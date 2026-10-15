@@ -8,10 +8,13 @@ SQLite database that ``TestConfig`` binds, which is discarded with the test
 that used it.
 '''
 
+from copy import copy
 from datetime import date
 
 import pytest
-from flask.testing import FlaskClient
+import werkzeug.test
+from flask.testing import EnvironBuilder, FlaskClient
+from werkzeug.wrappers import Request as BaseRequest
 
 from api import create_app, db
 from api.config import TestConfig
@@ -19,15 +22,82 @@ from api.models import Tracks, YearlyAvg
 
 
 class CompatFlaskClient(FlaskClient):
-    """Flask 2.0.1 forwards an `as_tuple` keyword Werkzeug 2.2.3 rejects.
+    """`FlaskClient` for the pinned Flask 2.0.1 / Werkzeug 2.2.3 pair.
 
-    Every request would otherwise raise TypeError out of EnvironBuilder, so
-    the keyword is dropped here before the call reaches Werkzeug's client.
+    Flask 2.0.1 forwards Werkzeug's retired `as_tuple` keyword, which Werkzeug
+    2.2.3 no longer declares: the keyword falls through to `EnvironBuilder`
+    and every request raises TypeError. The keyword is consumed here instead
+    and the built request is handed straight to Werkzeug's client.
+
+    Every other thing `FlaskClient` does to a request is still done, so this
+    is a drop-in replacement rather than a lossy one:
+
+    * `environ_base` - `REMOTE_ADDR` 127.0.0.1 and `HTTP_USER_AGENT`
+      `werkzeug/<version>` - is merged into the environment of every request,
+      with a caller's own `environ_base` taking precedence over those;
+    * the `flask._preserve_context` marker is set from the client's
+      `preserve_context`, which is what keeps the request context alive for
+      the whole of a `with client:` block;
+    * requests are built through Flask's app-aware `EnvironBuilder`, and a
+      caller passing an `EnvironBuilder`, an environ `dict` or a `Request`
+      has that object's own environment merged with the base as well;
+    * `as_tuple=True` answers the `(environ, response)` pair Werkzeug 2.0
+      answered. The keyword cannot be forwarded - Werkzeug 2.2 removed it and
+      its client always returns a `TestResponse` alone - so the pair is
+      assembled here from the request the response was produced from.
     """
 
     def open(self, *args, **kwargs):
-        kwargs.pop('as_tuple', None)
-        return super(FlaskClient, self).open(*args, **kwargs)
+        # keyword-only in Flask's own signature, so they leave **kwargs
+        # before the single-argument branch below tests whether it is empty
+        as_tuple = kwargs.pop('as_tuple', False)
+        buffered = kwargs.pop('buffered', False)
+        follow_redirects = kwargs.pop('follow_redirects', False)
+
+        def copy_environ(other):
+            return {
+                **self.environ_base,
+                **other,
+                'flask._preserve_context': self.preserve_context,
+            }
+
+        request = None
+
+        if not kwargs and len(args) == 1:
+            arg = args[0]
+
+            if isinstance(arg, werkzeug.test.EnvironBuilder):
+                builder = copy(arg)
+                builder.environ_base = copy_environ(builder.environ_base or {})
+                request = builder.get_request()
+            elif isinstance(arg, dict):
+                request = EnvironBuilder.from_environ(
+                    arg, app=self.application, environ_base=copy_environ({})
+                ).get_request()
+            elif isinstance(arg, BaseRequest):
+                request = copy(arg)
+                request.environ = copy_environ(request.environ)
+
+        if request is None:
+            kwargs['environ_base'] = copy_environ(kwargs.get('environ_base', {}))
+            builder = EnvironBuilder(self.application, *args, **kwargs)
+
+            try:
+                request = builder.get_request()
+            finally:
+                builder.close()
+
+        # Werkzeug's client is reached directly, past the Flask method that
+        # forwards the retired `as_tuple` keyword to it; the request built
+        # above is the single positional argument it accepts.
+        response = super(FlaskClient, self).open(
+            request, buffered=buffered, follow_redirects=follow_redirects
+        )
+
+        if as_tuple:
+            return request.environ, response
+
+        return response
 
 
 # Four chart appearances: three weeks of Artist One spread over two tracks,
