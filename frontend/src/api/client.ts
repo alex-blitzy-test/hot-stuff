@@ -36,6 +36,18 @@ export class ApiError extends Error {
 }
 
 /**
+ * The copy a caller shows when a request never reached the API.
+ *
+ * Every failure that carried a response is an {@link ApiError} carrying that
+ * response's status text; a network or DNS failure carries none and has no text
+ * to report, which is the one case where the wording has to come from here. It
+ * is declared beside the class that detects the difference, so the callers that
+ * render it — the search field, the panel and the rank-history chart — say the
+ * same thing about the same failure.
+ */
+export const UNREACHABLE_MESSAGE = 'Unable to reach the server';
+
+/**
  * Issue a GET and resolve with the parsed payload.
  *
  * Deliberately module-private: an exported generic request helper would let a

@@ -19,7 +19,7 @@ import ArtistSearch from './ArtistSearch';
 import ArtistResults from './ArtistResults';
 import TrackHistoryChart from './TrackHistoryChart';
 import Hamburger from '../navigation/Hamburger';
-import { getArtistSummary, ApiError } from '../../api/client';
+import { getArtistSummary, ApiError, UNREACHABLE_MESSAGE } from '../../api/client';
 import type { ArtistSearchState } from './ArtistSearch';
 import type { ArtistTrackSelection } from './ArtistResults';
 import type { ArtistSummary } from '../../types/api';
@@ -27,12 +27,6 @@ import type { ArtistSummary } from '../../types/api';
 interface ArtistsSectionProps {
   showNav: () => void;
 }
-
-/**
- * The copy shown when a request never reached the API, which is the only
- * failure carrying no HTTP status text to display.
- */
-const UNREACHABLE_MESSAGE = 'Unable to reach the server';
 
 const EMPTY_METRIC = '—';
 
@@ -139,8 +133,9 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
          * and its message is that response's status text — the same copy the
          * Tracks and Trends panels have always shown. A rejection without a
          * response, an unreachable backend, arrives here unwrapped and has no
-         * status text to report, so it is named instead of swallowed: this panel
-         * settles on a message rather than sitting on its loading marker.
+         * status text to report, so it is named with the client's shared
+         * `UNREACHABLE_MESSAGE` instead of being swallowed: this panel settles
+         * on a message rather than sitting on its loading marker.
          */
         setSummaryError(
           err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE
@@ -152,10 +147,14 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
     setSelection(next);
   }, []);
 
-  // The search owns its own loading and error state; the summary's failure is
-  // reported through the same banner, so the panel always settles on one of them.
+  /*
+   * The search and the summary own separate error state. The search's failure
+   * belongs inside the results region, which has nothing to show without it;
+   * the summary's failure belongs against the card slot, which is the only
+   * element the summary request feeds. Both are shown, so a failed summary
+   * never removes results a search already found.
+   */
   const loading = search.loading;
-  const error = search.error ?? summaryError;
 
   return (
     <div className='section'>
@@ -163,43 +162,59 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
         <ArtistSearch onChange={handleSearch} delayMs={300} />
         <Hamburger showNav={showNav} />
       </div>
-      {summary !== null && (
-        <div className='artistSummary'>
-          {/* The panel's subject is the artist it describes, so its name is the
-              panel's top-level heading: the chart caption below sits one level
-              down, the loading and error text keeps the level the other panels
-              use, and the result rows carry no heading at all. The class still
-              supplies the card-title treatment, so the element costs no visual
-              change. */}
-          <h1 className='rowEl artist'>{summary.artist}</h1>
-          {summariseMetrics(summary).map((metric) => (
-            <div className='artistSummaryRow' key={metric.label}>
-              <span className='artistSummaryLabel'>{metric.label}</span>
-              <span
-                className={
-                  metric.headline
-                    ? 'artistSummaryValue artistSummaryHeadline'
-                    : 'artistSummaryValue'
-                }
-              >
-                {metric.value}
-              </span>
-            </div>
-          ))}
-          {/* No appearance answers with zero weeks, so the card says so rather
-              than showing a dash for every metric. */}
-          {summary.total_weeks === 0 && (
-            <p className='rowEl track'>No chart appearances</p>
-          )}
-        </div>
-      )}
-      <div className='scroll'>
-        {/* The loading and error markers keep the markup the Tracks and Trends
-            panels use, so the same three-dot marker and the same banner text
-            render at the same size as on those tabs. */}
-        {error && <h1 className='error'>{error}</h1>}
+      {/* The panel's whole content is search-driven and changes without a page
+          load, so the regions that change are live. This one is the summary's
+          slot and is rendered from first paint, so the card or the error message
+          arrives inside a region that already exists. */}
+      <div aria-live='polite'>
+        {/* The summary's own outcome takes the card slot: on a failure the card
+            is already null, because the handler clears it before issuing the
+            request, so the error text stands in its place and the results below
+            — which the search produced — stay on screen. */}
+        {summaryError !== null && <h1 className='error'>{summaryError}</h1>}
+        {summary !== null && (
+          <div className='artistSummary'>
+            {/* The panel's subject is the artist it describes, so its name is the
+                panel's top-level heading: the chart caption below sits one level
+                down, the loading and error text keeps the level the other panels
+                use, and the result rows carry no heading at all. The class still
+                supplies the card-title treatment, so the element costs no visual
+                change. */}
+            <h1 className='rowEl artist'>{summary.artist}</h1>
+            {summariseMetrics(summary).map((metric) => (
+              <div className='artistSummaryRow' key={metric.label}>
+                <span className='artistSummaryLabel'>{metric.label}</span>
+                <span
+                  className={
+                    metric.headline
+                      ? 'artistSummaryValue artistSummaryHeadline'
+                      : 'artistSummaryValue'
+                  }
+                >
+                  {metric.value}
+                </span>
+              </div>
+            ))}
+            {/* No appearance answers with zero weeks, so the card says so rather
+                than showing a dash for every metric. */}
+            {summary.total_weeks === 0 && (
+              <p className='rowEl track'>No chart appearances</p>
+            )}
+          </div>
+        )}
+      </div>
+      {/* The results region is live as well: its loading marker, a search
+          failure and the matched rows replace one another here with no page
+          load, and the banner is the assertive one of the two. The banner and
+          the loading marker keep the markup the Tracks and Trends panels use,
+          so the same text and the same three-dot marker render at the same size
+          as on those tabs. */}
+      <div className='scroll' aria-live='polite'>
+        {search.error !== null && (
+          <h1 className='error' role='alert'>{search.error}</h1>
+        )}
         {loading && <h1 className='loading'>. . .</h1>}
-        {!loading && !error && (
+        {!loading && search.error === null && (
           <ArtistResults
             tracks={search.tracks}
             selectedTrack={selection === null ? null : selection.track}

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { getArtist, ApiError } from '../../api/client';
+import { getArtist, ApiError, UNREACHABLE_MESSAGE } from '../../api/client';
 import type { Track } from '../../types/api';
 
 /** The outcome of one artist search, as reported to the container. */
@@ -33,12 +33,6 @@ interface ArtistSearchProps {
   /** Quiet period after the last keystroke, before a request is issued. */
   delayMs?: number;
 }
-
-/**
- * The copy shown when the request never reached the API, which is the one
- * failure that carries no HTTP status text to display.
- */
-const UNREACHABLE_MESSAGE = 'Unable to reach the server';
 
 const DEFAULT_DELAY_MS = 300;
 
@@ -95,9 +89,9 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
            * response, and its message is that response's status text — the same
            * copy the Tracks and Trends panels have always shown. A rejection
            * without a response, an unreachable backend, arrives here unwrapped
-           * and has no status text to report, so it is named instead of
-           * swallowed: the panel settles on a message rather than sitting on
-           * its loading marker.
+           * and has no status text to report, so it is named with the client's
+           * shared `UNREACHABLE_MESSAGE` instead of being swallowed: the panel
+           * settles on a message rather than sitting on its loading marker.
            */
           error: err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE,
         });
@@ -121,6 +115,7 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
       value={term}
       onChange={handleChange}
       placeholder='Artist'
+      aria-label='Artist'
     />
   );
 }

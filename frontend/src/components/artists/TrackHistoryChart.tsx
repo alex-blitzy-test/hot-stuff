@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
-import { getTrack } from '../../api/client';
+import { ApiError, getTrack, UNREACHABLE_MESSAGE } from '../../api/client';
 import type { Track } from '../../types/api';
 
 am4core.useTheme(am4themes_animated);
@@ -53,9 +53,20 @@ function byWeekAscending(a: Track, b: Track): number {
  * outlives no selection: picking a different track row disposes the previous
  * instance before the new one is built, so the host element never accumulates
  * axes, series or a second chart.
+ *
+ * The request behind the chart is this component's own, so its failure is too:
+ * a rejected `getTrack` leaves the host empty and renders the reason above it,
+ * in the copy the panels use, rather than reporting the failure upwards and
+ * disturbing the search results the user is still reading.
  */
 export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.Element {
   const { spotifyId } = props;
+
+  // The failure of this component's own request. The chart owns the `getTrack`
+  // call, so it owns the outcome: a failure is rendered here rather than
+  // reported up, because the failure of a rank-history request must not disturb
+  // the search results the user is still reading.
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let chart: am4charts.XYChart | null = null;
@@ -64,14 +75,25 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
     async function draw(): Promise<void> {
       let appearances: Track[];
 
+      // A new request clears the previous failure, so a later selection never
+      // reads a message that belonged to an earlier one.
+      setError(null);
+
       try {
         appearances = await getTrack(spotifyId);
-      } catch {
-        // Leaving the host element empty is this component's whole response to a
-        // failed request: the panel that renders it owns the error message, and
-        // this component receives no error channel to report through. Returning
-        // here also keeps the rejection inside this function, so nothing reaches
-        // the window as an unhandled rejection.
+      } catch (err) {
+        // The host element stays empty and the message above it says why,
+        // instead of leaving the region blank as though the request were still
+        // in flight. A failure that carried a response names itself through the
+        // client's `ApiError` status text; one that never reached the API has no
+        // text of its own, so it shows the client's shared copy for that case.
+        // Returning here also keeps the rejection inside this function, so
+        // nothing reaches the window as an unhandled rejection. A reply that
+        // arrives after this effect was cleaned up belongs to a selection that is
+        // already gone, so it is dropped rather than overwriting the live one.
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE);
+        }
         return;
       }
 
@@ -119,6 +141,22 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       series.strokeWidth = 2;
       series.tensionX = 0.8;
       series.stroke = am4core.color('rgb(128, 103, 220)');
+
+      // A line is painted along its points, so a history of exactly one
+      // appearance has a path of zero length and the host stays visually empty.
+      // The bullet is the mark that sits on a point itself, which is what makes
+      // a single-appearance selection visible; it is pushed for every
+      // appearance rather than special-cased for that one, and it is filled in
+      // the series' own accent so the mark reads as part of the line.
+      // A chart mark is not a control, so the mark and its series both opt out
+      // of the library's focusable-item rule: left to itself it makes a small
+      // series' bullets keyboard-focusable once the data validates, one
+      // nameless stop per point and no focus indicator.
+      series.skipFocusThreshold = 1;
+      const bullet = new am4charts.CircleBullet();
+      bullet.focusable = false;
+      bullet.circle.fill = am4core.color('rgb(128, 103, 220)');
+      series.bullets.push(bullet);
     }
 
     void draw();
@@ -130,14 +168,21 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
   }, [spotifyId]);
 
   return (
-    <div
-      id={CHART_ID}
-      style={{
-        width: '100%',
-        height: '260px',
-        marginTop: '10px',
-        marginRight: '20px'
-      }}
-    />
+    <>
+      {/* The house error marker — the same centred `<h1 className='error'>` the
+          panels render — sits above the host, which keeps its id and its inline
+          style untouched: a failed request leaves the chart region as it is and
+          states the failure in the space above it. */}
+      {error !== null && <h1 className='error'>{error}</h1>}
+      <div
+        id={CHART_ID}
+        style={{
+          width: '100%',
+          height: '260px',
+          marginTop: '10px',
+          marginRight: '20px'
+        }}
+      />
+    </>
   );
 }
