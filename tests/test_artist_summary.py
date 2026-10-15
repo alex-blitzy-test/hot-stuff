@@ -294,3 +294,19 @@ def test_summary_settles_the_features_the_weekly_helper_cannot_average(
 
     assert response.status_code == 200
     assert response.get_json() == expected
+
+
+def test_nul_byte_in_the_artist_segment_is_rejected(client):
+    '''A NUL byte never reaches the bound query parameter.
+
+    This route matches with the same LIKE value as the artist route, and
+    psycopg2 refuses a NUL byte inside a bound literal client-side, so the
+    segment is answered by the route's own refusal instead of a 500 raised out
+    of the execute.
+    '''
+    response = client.get('/api/artist/a%00b/summary')
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        'error': 'Invalid artist: a NUL byte is not allowed in a path segment',
+    }

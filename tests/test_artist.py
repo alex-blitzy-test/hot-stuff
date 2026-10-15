@@ -11,9 +11,18 @@ second artist sharing the newest week.
 
 Request paths carry the space of an artist name as %20, which is what the
 browser client percent-encodes before it calls.
+
+A path segment carrying a NUL byte is the one input this route refuses:
+psycopg2 refuses a NUL byte inside a bound literal before the statement
+leaves the client, so the segment is answered by the route's own 400 rather
+than by a 500 raised out of the ORM's execute. Every other control byte is a
+bound parameter like any other character and stays accepted, which the last
+case below pins.
 '''
 
 from datetime import date
+
+import pytest
 
 # The fields TrackSchema serializes (api/models.py): the row shape the browser
 # receives through frontend/src/api/client.ts's getArtist.
@@ -97,3 +106,28 @@ def test_row_carries_the_serialized_track_fields(client):
     # marshmallow serializes the DATE column as an ISO 8601 string
     assert isinstance(rows[0]['week'], str)
     assert date.fromisoformat(rows[0]['week']) == date(2021, 11, 27)
+
+
+def test_nul_byte_in_the_artist_segment_is_rejected(client):
+    '''A NUL byte never reaches the bound query parameter.
+
+    The driver refuses a NUL byte inside a bound literal client-side, so the
+    segment is answered by this route's own refusal instead of a 500 raised out
+    of the execute that carries the LIKE value.
+    '''
+    response = client.get('/api/artist/a%00b')
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        'error': 'Invalid artist: a NUL byte is not allowed in a path segment',
+    }
+
+
+@pytest.mark.parametrize('segment', ['a%09b', 'a%0ab'])
+def test_other_control_bytes_are_still_bound_parameters(client, segment):
+    '''Only the NUL byte is refused: a tab and a newline bound like any other
+    character, so they are an unmatched term rather than a rejected one.'''
+    response = client.get(f'/api/artist/{segment}')
+
+    assert response.status_code == 200
+    assert response.get_json() == []

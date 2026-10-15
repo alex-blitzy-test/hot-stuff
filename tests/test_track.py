@@ -57,3 +57,19 @@ def test_track_with_an_unmatched_id_returns_an_empty_list(client):
     # not-found branch, and the frontend reads [] as "no appearances".
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+def test_nul_byte_in_the_spotify_id_segment_is_rejected(client):
+    '''A NUL byte never reaches the bound query parameter.
+
+    psycopg2 refuses a NUL byte inside a bound literal client-side, before the
+    statement leaves the client, so the segment is answered by this route's own
+    refusal instead of a 500 raised out of the execute.
+    '''
+    response = client.get('/api/track/a%00b')
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        'error': (
+            'Invalid spotify_id: a NUL byte is not allowed in a path segment'),
+    }

@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import isfinite
 from typing import Any
 
@@ -53,6 +54,40 @@ def _computable_avg_features(songs: list[dict[str, Any]]) -> dict[str, int]:
     return features
 
 
+def _is_iso_week(segment: str) -> bool:
+    '''Whether a week segment is the padded ISO date its payload echoes.
+
+    The segment has to parse and to round-trip through that same format:
+    strptime accepts an unpadded month and day, so '2021-1-3' parses while the
+    week computed from it - 2021-01-02 - is a chart week of its own; and a
+    segment that is no date at all is refused here rather than raising out of
+    the handler's get_query_week call.
+    '''
+    try:
+        parsed = datetime.strptime(segment, '%Y-%m-%d')
+    except ValueError:
+        return False
+    return parsed.strftime('%Y-%m-%d') == segment
+
+
+# psycopg2 refuses a NUL byte inside a bound literal before the statement
+# leaves the client, so the artist, summary and track rules hold their path
+# segment to that one byte rather than handing it to the driver to raise. The
+# other control bytes bind like any other character and stay accepted.
+def _nul_byte_refusal(
+        segment: str, parameter: str) -> tuple[Response, int] | None:
+    '''The 400 a rule answers for a segment carrying a NUL byte, else None.
+
+    `parameter` is the rule's own path parameter, so the refusal reads as the
+    route that produced it.
+    '''
+    if '\x00' in segment:
+        refusal = (f'Invalid {parameter}: a NUL byte is not allowed in a '
+                   'path segment')
+        return jsonify({'error': refusal}), 400
+    return None
+
+
 # api/ route redirects to current week
 @bp.route('/', methods=['GET'])
 def home() -> Response:
@@ -62,7 +97,10 @@ def home() -> Response:
 
 # get track by id
 @bp.route('/track/<spotify_id>', methods=['GET'])
-def get_track_by_id(spotify_id: str) -> Response:
+def get_track_by_id(spotify_id: str) -> Response | tuple[Response, int]:
+    refusal = _nul_byte_refusal(spotify_id, 'spotify_id')
+    if refusal is not None:
+        return refusal
     resultObj = Tracks.query.filter_by(spotify_id=spotify_id).order_by(
         Tracks.rank).all()
     return_list = tracks_schema.dump(resultObj)
@@ -71,7 +109,9 @@ def get_track_by_id(spotify_id: str) -> Response:
 
 # get tracks by week
 @bp.route('/week/<week>', methods=['GET'])
-def get_tracks_by_week(week: str) -> Response:
+def get_tracks_by_week(week: str) -> Response | tuple[Response, int]:
+    if not _is_iso_week(week):
+        return jsonify({'error': f'Invalid week: {week}'}), 400
     week = get_query_week(week)
     returnObj = {'week': week}
     songsObj = Tracks.query.filter_by(week=week).order_by(Tracks.rank).all()
@@ -85,7 +125,10 @@ def get_tracks_by_week(week: str) -> Response:
 
 # get tracks by artist
 @bp.route('/artist/<artist>', methods=['GET'])
-def get_tracks_by_artist(artist: str) -> Response:
+def get_tracks_by_artist(artist: str) -> Response | tuple[Response, int]:
+    refusal = _nul_byte_refusal(artist, 'artist')
+    if refusal is not None:
+        return refusal
     resultObj = Tracks.query.filter(
         func.lower(Tracks.artist).like(func.lower(f'%{artist}%'))).order_by(
             Tracks.week.desc()).all()
@@ -96,6 +139,9 @@ def get_tracks_by_artist(artist: str) -> Response:
 # get an artist's chart appearances summarised
 @bp.route('/artist/<artist>/summary', methods=['GET'])
 def get_artist_summary(artist: str) -> tuple[Response, int]:
+    refusal = _nul_byte_refusal(artist, 'artist')
+    if refusal is not None:
+        return refusal
     match = func.lower(Tracks.artist).like(func.lower(f'%{artist}%'))
     matchedRows, totalWeeks, uniqueTracks, bestRank, firstWeek, lastWeek = (
         Tracks.query.with_entities(

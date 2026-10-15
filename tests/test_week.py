@@ -18,7 +18,15 @@ This module deliberately holds no case for a week that carries no seeded rows.
 instead of answering 500. That is a frozen limitation of the weekly helper and
 not part of this route's contract - do not add an empty-week case here to
 "fix" it.
+
+The route itself refuses any segment that is not the padded ISO date it
+echoes, before ``get_query_week`` is reached: a segment that is no date at
+all, an impossible calendar date, and the unpadded spelling ``strptime``
+tolerates are all answered with a 400 error body instead of a 500 raised out
+of the helper's parse. ``MALFORMED_WEEKS`` pins that refusal.
 '''
+
+import pytest
 
 # the field set of api.models.TrackSchema, which is the serializer for `songs`
 TRACK_FIELDS = frozenset({
@@ -31,6 +39,26 @@ TRACK_FIELDS = frozenset({
 # holding two, so both the ordering and the means are meaningful
 NEWEST_WEEK = '2021-11-27'
 OLDEST_WEEK = '2021-11-13'
+
+# The segments the route refuses, each paired with the error body it answers:
+# the request form of the segment - two carry a percent-encoded control byte,
+# %09 a tab and %0a a newline, as the browser client would send them - and the
+# decoded value that body echoes. The list covers a segment that is no date, an
+# impossible day, an impossible month, an impossible year, the unpadded
+# spelling strptime accepts but this route never echoes, an ISO timestamp, a
+# bare year, a lone hyphen, and the two control bytes.
+MALFORMED_WEEKS = [
+    ('abc', 'Invalid week: abc'),
+    ('2021-13-45', 'Invalid week: 2021-13-45'),
+    ('2021-02-30', 'Invalid week: 2021-02-30'),
+    ('0000-00-00', 'Invalid week: 0000-00-00'),
+    ('2021-1-3', 'Invalid week: 2021-1-3'),
+    ('2021-11-13T00:00:00', 'Invalid week: 2021-11-13T00:00:00'),
+    ('2021', 'Invalid week: 2021'),
+    ('-', 'Invalid week: -'),
+    ('a%09b', 'Invalid week: a\tb'),
+    ('%0a', 'Invalid week: \n'),
+]
 
 
 def test_week_payload_keys_and_echoed_week(client):
@@ -107,3 +135,17 @@ def test_week_sunday_request_normalises_to_the_saturday_chart_week(client):
     assert sunday.status_code == 200
     assert sunday.get_json() == saturday.get_json()
     assert sunday.get_json()['week'] == OLDEST_WEEK
+
+
+@pytest.mark.parametrize('segment, expected_error', MALFORMED_WEEKS)
+def test_week_refuses_a_segment_that_is_not_its_padded_iso_date(
+        client, segment, expected_error):
+    '''A segment that is not the padded ISO date is a 400, never a 500.
+
+    The refusal is the whole body, so a malformed segment is answered by the
+    route's own validation rather than by anything the weekly helper raises.
+    '''
+    response = client.get(f'/api/week/{segment}')
+
+    assert response.status_code == 400
+    assert response.get_json() == {'error': expected_error}
