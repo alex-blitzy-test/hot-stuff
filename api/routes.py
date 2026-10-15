@@ -12,6 +12,13 @@ ANALYSIS_FEATURES: frozenset[str] = frozenset(
     column.name for column in YearlyAvg.__table__.columns
 ) - {'index', 'year'}
 
+# the six numeric columns the weekly helper reads: the summary's matched-row
+# read projects them instead of the whole wide row, which nothing there uses
+SUMMARY_FEATURES: tuple[str, ...] = (
+    'energy', 'danceability', 'speechiness', 'acousticness',
+    'instrumentalness', 'tempo',
+)
+
 # registered by create_app, which passes no prefix: a prefix given to
 # register_blueprint replaces this one instead of extending it
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -85,12 +92,25 @@ def get_artist_summary(artist: str) -> tuple[Response, int]:
     # count is the premise, because a matched row can carry a NULL week and so
     # count towards no distinct week at all
     if matchedRows:
-        songs = tracks_schema.dump(Tracks.query.filter(match).all())
-        weeklyData = get_weekly_data(songs)
-        avgFeatures = {item['feature'].lower(): item['mean']
-                       for item in weeklyData['averages']}
-        avgFeatures['tempo'] = weeklyData['avgTempo']
-        summaryObj['avg_features'] = avgFeatures
+        songs = [
+            dict(zip(SUMMARY_FEATURES, row))
+            for row in Tracks.query.with_entities(
+                Tracks.energy, Tracks.danceability, Tracks.speechiness,
+                Tracks.acousticness, Tracks.instrumentalness,
+                Tracks.tempo).filter(match)
+        ]
+        try:
+            weeklyData = get_weekly_data(songs)
+        except ValueError:
+            # the helper cannot average a feature column that is NULL across
+            # the whole match: a matched row set is still a legal answer, so
+            # it keeps the empty features the no-match branch answers above
+            summaryObj['avg_features'] = {}
+        else:
+            avgFeatures = {item['feature'].lower(): item['mean']
+                           for item in weeklyData['averages']}
+            avgFeatures['tempo'] = weeklyData['avgTempo']
+            summaryObj['avg_features'] = avgFeatures
     return jsonify(summaryObj), 200
 
 

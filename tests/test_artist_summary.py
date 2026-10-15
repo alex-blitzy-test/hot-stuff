@@ -8,6 +8,8 @@ the path carried it: a partial term can match several artists, so echoing the
 request is the only deterministic choice.
 '''
 
+from datetime import date
+
 import pytest
 
 from api import db
@@ -186,3 +188,71 @@ def test_summary_reports_a_matched_row_whose_week_is_null(app, client):
 
     assert response.status_code == 200
     assert response.get_json() == NULL_WEEK_SUMMARY
+
+
+# Two appearances whose helper input carries a whole NULL column: five feature
+# columns NULL with tempo present, and tempo NULL with the five features
+# present. Both carry a week and a rank, so every aggregate reports the row.
+# Either shape leaves the weekly helper a column it cannot average, and both
+# are matched rows all the same, so the term is still answered - with the empty
+# `avg_features` a term matching nothing answers.
+NULL_FEATURE_APPEARANCE = {
+    'id': 6, 'week': date(2021, 11, 13), 'rank': 4,
+    'track': 'Track E', 'artist': 'Null Feature Artist',
+    'spotify_id': 'sid-e', 'tempo': 120.0, 'energy': None,
+    'danceability': None, 'valence': 0.40, 'liveness': 0.20,
+    'speechiness': None, 'acousticness': None,
+    'instrumentalness': None, 'loudness': -6.0,
+}
+
+NULL_TEMPO_APPEARANCE = {
+    'id': 7, 'week': date(2021, 11, 13), 'rank': 6,
+    'track': 'Track F', 'artist': 'Null Tempo Artist',
+    'spotify_id': 'sid-f', 'tempo': None, 'energy': 0.50,
+    'danceability': 0.50, 'valence': 0.50, 'liveness': 0.50,
+    'speechiness': 0.50, 'acousticness': 0.50,
+    'instrumentalness': 0.50, 'loudness': -6.0,
+}
+
+# The two shapes differ only in which column is NULL, so one parameterised
+# case covers both: a single appearance of its own artist, one distinct week
+# and one distinct track, the row's own rank, both week bounds the row's ISO
+# week, and no averages at all.
+NULL_COLUMN_CASES = [
+    (NULL_FEATURE_APPEARANCE, '/api/artist/Null%20Feature%20Artist/summary', {
+        'artist': 'Null Feature Artist',
+        'total_weeks': 1,
+        'unique_tracks': 1,
+        'best_rank': 4,
+        'first_week': '2021-11-13',
+        'last_week': '2021-11-13',
+        'avg_features': {},
+    }),
+    (NULL_TEMPO_APPEARANCE, '/api/artist/Null%20Tempo%20Artist/summary', {
+        'artist': 'Null Tempo Artist',
+        'total_weeks': 1,
+        'unique_tracks': 1,
+        'best_rank': 6,
+        'first_week': '2021-11-13',
+        'last_week': '2021-11-13',
+        'avg_features': {},
+    }),
+]
+
+
+@pytest.mark.parametrize('row, path, expected', NULL_COLUMN_CASES)
+def test_summary_answers_a_column_that_is_null_across_the_match(
+        app, client, row, path, expected):
+    '''A column the helper cannot average is not a failed request.
+
+    The weekly helper derives each `avg_features` value from a mean, which a
+    column that is NULL throughout its input cannot supply, so the matched set
+    keeps the empty object the unmatched case reports instead of raising.
+    '''
+    db.session.add(Tracks(**row))
+    db.session.commit()
+
+    response = client.get(path)
+
+    assert response.status_code == 200
+    assert response.get_json() == expected
