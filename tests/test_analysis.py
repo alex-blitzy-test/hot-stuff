@@ -5,11 +5,10 @@ whose five-year rolling window produces a value at all, so the endpoint answers
 with exactly the 2019 and 2020 rows: the year's own mean and the mean over the
 window that ends there.
 
-The route projects one column of YearlyAvg, chosen by the feature path segment,
-and it now rejects a segment outside its allow-list with 400 rather than letting
-`getattr` resolve an arbitrary attribute of the model class. Both halves are
-pinned here: the eight allow-listed features and their payload, and the 400 that
-replaced the previous AttributeError-driven 500.
+The route projects one column of YearlyAvg, chosen by the feature path
+segment, and answers 400 for a segment outside its allow-list; both halves
+are pinned here: the eight allow-listed features and their payload, and the
+refusal.
 
 The order those rows arrive in is a third premise, and it comes from storage
 rather than from the query: the route projects them through an unordered
@@ -41,10 +40,10 @@ RECOGNISED_FEATURES = (
 )
 
 # The names the route refuses. Both halves of the derivation above are pinned
-# here: the three model class attributes that are not columns at all - the two
-# `getattr` used to resolve (`query`, `__tablename__`) and `metadata` - and the
-# two real columns the derivation subtracts on purpose, `index` (the row key)
-# and `year` (the label the route projects for itself).
+# here: the three model class attributes that are not columns at all - `query`,
+# `__tablename__` and `metadata` - and the two real columns the derivation
+# subtracts on purpose, `index` (the row key) and `year` (the label the route
+# projects for itself).
 REFUSED_FEATURES = (
     'query',
     '__tablename__',
@@ -75,7 +74,10 @@ def test_analysis_returns_the_means_of_the_requested_feature(client, feature):
     # the path segment is echoed verbatim, not re-cased
     assert body['feature'] == feature
     assert [row['year'] for row in body['data']] == YEARS
-    assert all(set(row) == {'year', 'value', 'rolling'} for row in body['data'])
+    assert all(
+        set(row) == {'year', 'value', 'rolling'}
+        for row in body['data']
+    )
     values, rollings = zip(*EXPECTED_POINTS[feature])
     assert [row['value'] for row in body['data']] == pytest.approx(values)
     assert [row['rolling'] for row in body['data']] == pytest.approx(rollings)
@@ -89,7 +91,10 @@ def test_every_recognised_feature_is_accepted(client, feature):
     body = response.get_json()
     assert body['feature'] == feature
     assert [row['year'] for row in body['data']] == YEARS
-    assert all(set(row) == {'year', 'value', 'rolling'} for row in body['data'])
+    assert all(
+        set(row) == {'year', 'value', 'rolling'}
+        for row in body['data']
+    )
 
 
 def test_unknown_feature_is_rejected_with_400(client):
