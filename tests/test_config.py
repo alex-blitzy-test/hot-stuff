@@ -4,23 +4,35 @@ selector and the module-level entry point.
 Every other module in this suite builds its application through
 ``create_app(TestConfig)``, so the wiring a deployment actually runs would
 otherwise never execute: ``DevConfig``'s development default, the ``FLASK_ENV``
-selector in ``create_app``, ``ProdConfig``'s fail-fast read of ``DATABASE_URL``
-and ``app.py``'s module-level ``app = create_app()``. This module is the only
-place those branches are exercised, and it is what fails if one of them
-regresses into a wrong default or into a silent production configuration.
+selector in ``create_app``, ``ProdConfig``'s fail-fast read of an absent
+``DATABASE_URL`` and ``app.py``'s module-level ``app = create_app()``. This
+module is the only place those branches are exercised, and it is what fails if
+one of them regresses into a wrong default or into a silent production
+configuration.
 
 The environment each test depends on is set through ``monkeypatch`` and no
 application is built at import, so neither collection nor the result depends on
 the ambient ``DATABASE_URL`` or ``FLASK_ENV`` - pytest loads no ``.flaskenv``.
-No test here needs a database to be running. The rejection test's two local
-connection attempts are its own - a port on localhost that nothing answers
+A present-but-unusable connection string arrives in two kinds, and this module
+tests both sides of the split the start-up probe makes. One that cannot be
+parsed at all, or that names a dialect this application has no driver for, is a
+misconfiguration no restart repairs, so construction still fails for it. One
+whose store merely cannot be reached - refused, unresolvable, or not yet
+listening - no longer stops construction: the probe reports it, the factory logs
+that report as a warning, and the application is built all the same. That second
+kind is what a cold ``docker compose up`` produces while the database container
+is still starting, which is why it must not be fatal.
+
+No test here needs a database to be running. The connection attempts of the
+connection-level cases are their own - a port on localhost that nothing answers
 (``postgresql://...@127.0.0.1:59999/nope``) and a SQLite path inside a directory
 that does not exist, both refused within milliseconds - the two tests that assert
 which configuration is selected replace the start-up probe instead of connecting,
-and every other assertion reads ``app.config`` values only.
+and every other assertion reads ``app.config`` values or captured log records.
 '''
 
 import importlib
+import logging
 import traceback
 
 import pytest
@@ -28,28 +40,42 @@ from flask import Flask
 
 import api
 from api import create_app
-from api.config import DevConfig, ProdConfig, TestConfig
+from api.config import DevConfig, ProdConfig, TestConfig, check_database_url
 
 # A URL this module supplies itself, so the assertion that follows cannot pass
 # by echoing whatever the ambient environment happened to hold.
 SUPPLIED_URL = 'sqlite:///:memory:'
 
-# The five shapes a present-but-unusable connection string arrives in, all of
-# which the start-up probe has to reject: whitespace that is not a URL at all, a
-# string carrying no scheme, a scheme this application has no dialect for, a
-# SQLite path whose directory does not exist, and a port nothing answers on.
-# Rejecting the last two needs a connection attempt, not a parse, which is the
-# reason the probe connects; both fail locally and within milliseconds, so no
-# database has to be reachable for this test to run.
+# The three shapes a present-but-unusable connection string arrives in that no
+# restart can repair, and which the start-up probe therefore still rejects:
+# whitespace that is not a URL at all, a string carrying no scheme, and a scheme
+# this application has no dialect for. All three are decided while the engine is
+# being built, before any store is contacted, so no database has to be reachable
+# for this test to run.
 UNUSABLE_DATABASE_URLS = [
     pytest.param('   ', id='blank'),
     pytest.param('not-a-url', id='not-a-url'),
     pytest.param('redis://localhost:6379/0', id='redis-scheme'),
+]
+
+# The two shapes whose value is well formed and whose store simply cannot be
+# reached, each stated with the failure class this pinned stack raises for it and
+# with fragments of the value that must stay out of what the probe reports - the
+# credential, the host, the port and the path. Both are refused locally within
+# milliseconds, so no database has to be reachable for these tests either, and
+# both are what a deployment sees while its database is still starting. Asserting
+# the old fatal behaviour for them would be asserting the defect.
+UNREACHABLE_DATABASE_URLS = [
     pytest.param(
-        'sqlite:////nonexistent-dir-xyz/probe.db', id='sqlite-missing-dir'
+        'sqlite:////nonexistent-dir-xyz/probe.db',
+        'OperationalError',
+        ('nonexistent-dir-xyz', 'probe.db'),
+        id='sqlite-missing-dir',
     ),
     pytest.param(
         'postgresql://postgres:postgres@127.0.0.1:59999/nope',
+        'OperationalError',
+        ('postgres', '59999', 'nope'),
         id='pg-port-refused',
     ),
 ]
@@ -86,19 +112,84 @@ def test_prod_config_fails_fast_without_database_url(monkeypatch):
 def test_unusable_database_url_is_rejected_at_startup(
     monkeypatch, config_class, unusable_url
 ):
-    '''No unusable value survives construction, under either deployment.'''
+    '''A value no restart can repair stops construction, under either mode.'''
     monkeypatch.setenv('DATABASE_URL', unusable_url)
 
     with pytest.raises(RuntimeError, match='DATABASE_URL'):
         create_app(config_class)
 
 
+@pytest.mark.parametrize(
+    'url, failure_class, hidden_fragments',
+    UNREACHABLE_DATABASE_URLS,
+)
+def test_unreachable_database_url_is_reported_not_raised(
+    url, failure_class, hidden_fragments
+):
+    '''A store that cannot be reached is reported to the log, not fatal.
+
+    The returned text is the one the factory logs, so it names the variable an
+    operator has to correct and the class of what failed, states what the
+    deployment is in place of the store, and carries no part of the value -
+    which is a credential.
+    '''
+    report = check_database_url(url)
+
+    assert report is not None
+    assert 'DATABASE_URL' in report
+    assert failure_class in report
+    # what the deployment still does, said rather than left to the reader
+    assert 'static' in report
+    assert url not in report
+    for fragment in hidden_fragments:
+        assert fragment not in report
+
+
+@pytest.mark.parametrize(
+    'url, failure_class, hidden_fragments',
+    UNREACHABLE_DATABASE_URLS,
+)
+def test_unreachable_database_url_still_builds_the_application(
+    monkeypatch, caplog, url, failure_class, hidden_fragments
+):
+    '''Construction survives the store being unreachable, and says so.
+
+    This is the container's cold start: the deployment's own connection string
+    is bound and the application is built, so only the endpoints that read the
+    database wait for it. The probe's report has to reach the log at WARNING -
+    a Flask application's logger propagates, so caplog sees it - and it has to
+    carry nothing of the value.
+    '''
+    monkeypatch.setenv('DATABASE_URL', url)
+
+    with caplog.at_level(logging.WARNING):
+        app = create_app(ProdConfig)
+
+    assert isinstance(app, Flask)
+    assert app.config['SQLALCHEMY_DATABASE_URI'] == url
+    warnings = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.WARNING
+    ]
+    assert warnings, caplog.text
+    assert any(
+        'DATABASE_URL' in message and failure_class in message
+        for message in warnings
+    )
+    assert url not in caplog.text
+    for fragment in hidden_fragments:
+        assert fragment not in caplog.text
+
+
 @pytest.fixture
 def no_running_database(monkeypatch):
-    # The probe has its own test above. The two tests below it assert which
-    # configuration was selected, which is a question about the selector and not
-    # about whether a database is up, so the probe stands down for them: the
-    # development default is read and compared without being connected to.
+    # The probe's two contracts have their own tests above. The two tests below
+    # assert which configuration was selected, which is a question about the
+    # selector and not about whether a database is up, so the probe stands down
+    # for them and reports nothing - None is its own answer for a value it could
+    # use - which leaves the development default read and compared without being
+    # connected to.
     monkeypatch.setattr(api, 'check_database_url', lambda url: None)
 
 

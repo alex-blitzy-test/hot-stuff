@@ -145,10 +145,15 @@ def create_app(config: type[Config] | None = None) -> Flask:
     app.config.from_object(config_class)
 
     # the connection string is exercised here, where a misconfiguration is the
-    # operator's to see; TestConfig is exempt, because its in-memory database
-    # belongs to the test fixture and not to a deployment
+    # operator's to see: a value this process cannot use at all stops
+    # construction, while a store that cannot be reached is only reported, so a
+    # deployment whose database is not up yet still serves the static
+    # interface; TestConfig is exempt, because its in-memory database belongs
+    # to the test fixture and not to a deployment
     if not issubclass(config_class, TestConfig):
-        check_database_url(app.config['SQLALCHEMY_DATABASE_URI'])
+        unreachable = check_database_url(app.config['SQLALCHEMY_DATABASE_URI'])
+        if unreachable is not None:
+            app.logger.warning(unreachable)
 
     db.init_app(app)
     ma.init_app(app)

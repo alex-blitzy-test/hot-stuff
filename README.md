@@ -51,7 +51,7 @@ The app has four tabs: Tracks, Trends, Artists and About.
 
 ## Environment Variables
 
-- `DATABASE_URL` : the database connection string, read by the application at startup. The container receives it from `docker-compose.yml`, which sets it in the `api` service's own environment, and a host-side `flask run` receives it from `.flaskenv`. Production must set it explicitly, because the application refuses to start without it. The production credential is supplied by the environment and is never part of the repository; the connection strings committed in `.flaskenv`, `docker-compose.yml` and `api/config.py` are the public local development placeholders for the compose database, not secrets.
+- `DATABASE_URL` : the database connection string, read by the application at startup. The container receives it from `docker-compose.yml`, which sets it in the `api` service's own environment, and a host-side `flask run` receives it from `.flaskenv`. Production must set it explicitly, because the application refuses to start without it. If it is set but the database cannot be reached, the application still starts and serves the static interface, and only the endpoints that read the database fail until the database becomes reachable. The production credential is supplied by the environment and is never part of the repository; the connection strings committed in `.flaskenv`, `docker-compose.yml` and `api/config.py` are the public local development placeholders for the compose database, not secrets.
 - `FLASK_ENV` : selects the configuration. `development` selects the development configuration; any other value selects the production configuration, which is the one that requires `DATABASE_URL` to be set.
 
 ## Container
