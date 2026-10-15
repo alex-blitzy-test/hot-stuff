@@ -14,7 +14,7 @@
  * anything outside React state.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ArtistSearch from './ArtistSearch';
 import ArtistResults from './ArtistResults';
 import TrackHistoryChart from './TrackHistoryChart';
@@ -76,28 +76,53 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   /*
-   * The term the newest search belongs to. A summary reply is accepted only
-   * while this still names it, so a response that outlived its term — the user
-   * kept typing — cannot overwrite the card of the current search.
+   * The summary request that is in flight, held by identity rather than by the
+   * term it was issued for. Every report this handler receives supersedes the
+   * request that came before it: the old one is aborted and the ref dropped, and
+   * a reply is accepted only while the ref still holds the controller it was
+   * issued under. Identity is what a term cannot supply here, because an abort
+   * rejects with no response and the user can come back to a term whose aborted
+   * request is still settling: a term-matching guard would take that rejection
+   * for a failure of the live search and put an unreachable-server message on
+   * the card.
    */
-  const latestArtistRef = useRef('');
+  const summaryRequestRef = useRef<AbortController | null>(null);
 
   const handleSearch = useCallback((state: ArtistSearchState) => {
     setSearch(state);
 
+    /*
+     * Every report — blank field, request in flight, failed search or completed
+     * one — supersedes the summary request before it, so that request is stopped
+     * here instead of running to completion and having its body parsed for a
+     * reply this handler would drop. An abort rejects with no response, and the
+     * identity guard below is what keeps that rejection from being read as a
+     * failure of the live request.
+     */
+    summaryRequestRef.current?.abort();
+    summaryRequestRef.current = null;
+
     // A blank field is not a search: the results, the selection, the chart and
     // the card are cleared and no summary request is owed.
     if (state.artist === '') {
-      latestArtistRef.current = '';
       setSelection(null);
       setSummary(null);
       setSummaryError(null);
       return;
     }
 
-    // The request is in flight; the terminal report below is where the summary
-    // is sequenced from, so exactly one is issued per completed search.
+    /*
+     * The request is in flight; the terminal report below is where the summary
+     * is sequenced from, so exactly one is issued per completed search. Until
+     * that report arrives the panel shows its loading marker alone: the
+     * selection, the chart and the card belonging to the previous term are
+     * cleared here exactly as they are for a blank field, so no earlier search's
+     * card or chart stands beside the marker of the search that replaced it.
+     */
     if (state.loading) {
+      setSelection(null);
+      setSummary(null);
+      setSummaryError(null);
       return;
     }
 
@@ -105,27 +130,34 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
     // error text comes from the search state; the card is cleared instead of
     // showing a summary for a term that was never resolved.
     if (state.error !== null) {
-      latestArtistRef.current = '';
       setSummary(null);
       setSummaryError(null);
       return;
     }
 
-    latestArtistRef.current = state.artist;
+    /*
+     * The result set is the one this search returned, so the selection and the
+     * card left by the previous search are cleared before the summary is asked
+     * for, and the request is issued under the controller the ref now holds: it
+     * is what both handlers below check to know whether this is still the
+     * summary the panel is waiting on.
+     */
+    const controller = new AbortController();
+    summaryRequestRef.current = controller;
     // A new result set invalidates the previously selected track and its chart.
     setSelection(null);
     setSummary(null);
     setSummaryError(null);
 
-    getArtistSummary(state.artist)
+    getArtistSummary(state.artist, controller.signal)
       .then((result) => {
-        if (latestArtistRef.current !== state.artist) {
+        if (summaryRequestRef.current !== controller) {
           return;
         }
         setSummary(result);
       })
       .catch((err: unknown) => {
-        if (latestArtistRef.current !== state.artist) {
+        if (summaryRequestRef.current !== controller) {
           return;
         }
         /*
@@ -142,6 +174,21 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
         );
       });
   }, []);
+
+  /*
+   * A summary still settling when the panel goes away is stopped, and the ref is
+   * emptied first so its rejection finds no request to belong to and sets no
+   * state. Without this the request outlives the component whose card it was
+   * fetched for.
+   */
+  useEffect(
+    () => () => {
+      const pending = summaryRequestRef.current;
+      summaryRequestRef.current = null;
+      pending?.abort();
+    },
+    []
+  );
 
   const handleSelectTrack = useCallback((next: ArtistTrackSelection) => {
     setSelection(next);

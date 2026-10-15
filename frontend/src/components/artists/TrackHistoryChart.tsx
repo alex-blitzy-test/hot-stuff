@@ -72,6 +72,16 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
     let chart: am4charts.XYChart | null = null;
     let cancelled = false;
 
+    /*
+     * The handle on this selection's request. Without it the rank-history call
+     * runs to completion for every track the user leaves behind — and for the
+     * one on screen when the panel unmounts — transferring and parsing a body
+     * whose result `cancelled` throws away. The cleanup aborts it; an abort
+     * rejects with no response, which is the response-less branch already
+     * handled below, and `cancelled` keeps that branch from reporting it.
+     */
+    const controller = new AbortController();
+
     async function draw(): Promise<void> {
       let appearances: Track[];
 
@@ -80,7 +90,7 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
       setError(null);
 
       try {
-        appearances = await getTrack(spotifyId);
+        appearances = await getTrack(spotifyId, controller.signal);
       } catch (err) {
         // The host element stays empty and the message above it says why,
         // instead of leaving the region blank as though the request were still
@@ -163,6 +173,7 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
 
     return () => {
       cancelled = true;
+      controller.abort();
       chart?.dispose();
     };
   }, [spotifyId]);

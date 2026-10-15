@@ -67,9 +67,11 @@ describe('ArtistSearch', () => {
     await vi.advanceTimersByTimeAsync(DEFAULT_DELAY_MS);
 
     // One request for four keystrokes, not four: every keystroke cleared the
-    // timer before it, so only the last one survived — the debounce itself.
+    // timer before it, so only the last one survived — the debounce itself. The
+    // second argument is the signal the component aborts when the term changes,
+    // so the call is asserted with it rather than by its path alone.
     await waitFor(() => expect(mockGetArtist).toHaveBeenCalledTimes(1));
-    expect(mockGetArtist).toHaveBeenCalledWith('elvis');
+    expect(mockGetArtist).toHaveBeenCalledWith('elvis', expect.any(AbortSignal));
   });
 
   it('issues no request for a blank term and reports the cleared state', async () => {
@@ -106,7 +108,7 @@ describe('ArtistSearch', () => {
 
     await vi.advanceTimersByTimeAsync(delayMs - DEFAULT_DELAY_MS);
     await waitFor(() => expect(mockGetArtist).toHaveBeenCalledTimes(1));
-    expect(mockGetArtist).toHaveBeenCalledWith('elvis');
+    expect(mockGetArtist).toHaveBeenCalledWith('elvis', expect.any(AbortSignal));
   });
 
   it('reports the search as loading, then the resolved appearances', async () => {
@@ -120,7 +122,9 @@ describe('ArtistSearch', () => {
     // The trimmed term is what reaches the client, and the request it makes is
     // reported before it is awaited: that in-flight report is what the panel
     // shows its loading marker for.
-    await waitFor(() => expect(mockGetArtist).toHaveBeenCalledWith('Elvis Presley'));
+    await waitFor(() =>
+      expect(mockGetArtist).toHaveBeenCalledWith('Elvis Presley', expect.any(AbortSignal)),
+    );
     expect(onChange).toHaveBeenCalledWith({
       artist: 'Elvis Presley',
       loading: true,

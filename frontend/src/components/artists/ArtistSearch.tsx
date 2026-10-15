@@ -64,11 +64,21 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
     // typed on while it was in flight — cannot overwrite the current search.
     let superseded = false;
 
+    /*
+     * The handle on this run's request. One controller belongs to one run of the
+     * effect, and the cleanup aborts it: a term the user has already left stops
+     * transferring and parsing a body whose reply would be dropped anyway,
+     * instead of running to completion long after the timer that started it is
+     * gone. It is not created above the blank-term return, because a field with
+     * nothing in it issues no request to stop.
+     */
+    const controller = new AbortController();
+
     const timer = window.setTimeout(async () => {
       onChangeRef.current({ artist, loading: true, tracks: [], error: null });
 
       try {
-        const tracks = await getArtist(artist);
+        const tracks = await getArtist(artist, controller.signal);
 
         if (superseded) {
           return;
@@ -99,7 +109,15 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
     }, delayMs ?? DEFAULT_DELAY_MS);
 
     return () => {
+      /*
+       * `superseded` is raised before the abort because the abort is what makes
+       * the awaited request reject, and the handlers above drop a reply only
+       * once that flag is set: an aborted request arrives as a rejection with no
+       * response, and it is the flag rather than the rejection's shape that says
+       * this reply belonged to a term that is gone.
+       */
       superseded = true;
+      controller.abort();
       window.clearTimeout(timer);
     };
   }, [term, delayMs]);

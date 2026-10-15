@@ -130,9 +130,9 @@ interface RequestCase {
 
 // One row per endpoint. `toHaveBeenCalledWith` matches the argument list
 // exactly, so each row also proves the client passes the path as its only
-// argument and no config object. The two artist rows are what prove the artist
-// segment is percent-encoded, and the summary row that the suffix is appended
-// to that same encoded segment.
+// argument and no config object. The artist rows and the reserved-character
+// track row are what prove a path segment is percent-encoded, and the summary
+// row that the suffix is appended to that same encoded segment.
 const requestCases: readonly RequestCase[] = [
   {
     situation: 'getWeek requests the week path and resolves with the unwrapped payload',
@@ -159,9 +159,18 @@ const requestCases: readonly RequestCase[] = [
     payload: summaryPayload,
   },
   {
-    situation: 'getTrack passes the Spotify id through unencoded',
+    situation: 'getTrack leaves a base-62 Spotify id unchanged by the encoding',
     url: '/api/track/sid-a',
     call: () => getTrack('sid-a'),
+    payload: artistTracks,
+  },
+  {
+    // The id is not a constant: it is `Track.spotify_id` as the API returned
+    // it, so the encoding has to hold for any value. The row above cannot prove
+    // that, because `encodeURIComponent` is a no-op for a base-62 id.
+    situation: 'getTrack percent-encodes the reserved characters of a Spotify id',
+    url: '/api/track/sid%2Fa%3Fb%23c',
+    call: () => getTrack('sid/a?b#c'),
     payload: artistTracks,
   },
   {
@@ -191,6 +200,43 @@ describe('client request paths', () => {
     await expect(getArtistSummary('Nobody At All')).resolves.toBe(noMatchSummary);
     expect(mocks.get).toHaveBeenCalledTimes(1);
     expect(mocks.get).toHaveBeenCalledWith('/api/artist/Nobody%20At%20All/summary');
+  });
+});
+
+describe('client request configuration', () => {
+  beforeEach(() => {
+    mocks.get.mockReset();
+  });
+
+  it('configures one finite timeout that bounds every request the module issues', async () => {
+    // Read through `vi.importActual`, as the AxiosError fixtures do, so axios
+    // keeps exactly one home under `src`. The mock above replaces only `get`
+    // and keeps the real `defaults` object, so this is the value a real request
+    // would use; axios's own default is `0`, which to axios means no timeout at
+    // all and is the state this case exists to rule out.
+    const actual = await vi.importActual<typeof import('axios')>('axios');
+    const { timeout } = actual.default.defaults;
+
+    if (typeof timeout !== 'number') {
+      throw new Error(
+        `expected the module to configure a numeric timeout, received ${String(timeout)}`,
+      );
+    }
+    expect(Number.isFinite(timeout)).toBe(true);
+    expect(timeout).toBeGreaterThan(0);
+  });
+
+  it("forwards an explicit AbortSignal as the transport's second argument", async () => {
+    const controller = new AbortController();
+    mocks.get.mockResolvedValue({ data: artistTracks });
+
+    await expect(getArtist('Elvis Presley', controller.signal)).resolves.toBe(artistTracks);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    expect(mocks.get).toHaveBeenCalledWith('/api/artist/Elvis%20Presley', {
+      signal: controller.signal,
+    });
+    // The signal-less request rows above are what prove a call without a signal
+    // still hands the transport the path alone, with no config object.
   });
 });
 
