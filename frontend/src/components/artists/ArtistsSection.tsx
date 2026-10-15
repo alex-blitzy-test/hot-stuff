@@ -211,7 +211,14 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
             is already null, because the handler clears it before issuing the
             request, so the error text stands in its place and the results below
             — which the search produced — stay on screen. */}
-        {summaryError !== null && <h1 className='error'>{summaryError}</h1>}
+        {/* The class sits on a wrapper rather than on the heading, because the
+            shared stylesheet rule centres an `h1` that is inside `.error`: the
+            wrapper is what makes this banner centre like the loading marker. */}
+        {summaryError !== null && (
+          <div className='error'>
+            <h1>{summaryError}</h1>
+          </div>
+        )}
         {summary !== null && (
           <div className='artistSummary'>
             {/* The panel's subject is the artist it describes, so its name is the
@@ -241,13 +248,15 @@ export default function ArtistsSection(props: ArtistsSectionProps): JSX.Element 
       </div>
       {/* The results region is live as well: its loading marker, a search
           failure and the matched rows replace one another here with no page
-          load, and the banner is the assertive one of the two. The banner and
-          the loading marker keep the markup the Tracks and Trends panels use,
-          so the same text and the same three-dot marker render at the same size
-          as on those tabs. */}
+          load, and the banner is the assertive one of the two. The class and the
+          assertive role sit on a wrapper, which is what lets the shared
+          stylesheet rule centre the banner; its text and heading size stay the
+          ones the Tracks and Trends panels show. */}
       <div className='scroll' aria-live='polite'>
         {search.error !== null && (
-          <h1 className='error' role='alert'>{search.error}</h1>
+          <div className='error' role='alert'>
+            <h1>{search.error}</h1>
+          </div>
         )}
         {loading && <h1 className='loading'>. . .</h1>}
         {!loading && search.error === null && (

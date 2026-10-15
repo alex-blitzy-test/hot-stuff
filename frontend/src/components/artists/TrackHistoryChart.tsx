@@ -178,11 +178,17 @@ export default function TrackHistoryChart(props: TrackHistoryChartProps): JSX.El
 
   return (
     <>
-      {/* The house error marker — the shared `<h1 className='error'>` the
-          panels render — sits above the host, which keeps its id and its inline
-          style untouched: a failed request leaves the chart region as it is and
-          states the failure in the space above it. */}
-      {error !== null && <h1 className='error'>{error}</h1>}
+      {/* The house error marker — the shared `.error` text the panels render —
+          sits above the host, which keeps its id and its inline style untouched:
+          a failed request leaves the chart region as it is and states the failure
+          in the space above it. The class sits on a wrapper rather than on the
+          heading, because the shared stylesheet rule centres an `h1` that is
+          inside `.error`. */}
+      {error !== null && (
+        <div className='error'>
+          <h1>{error}</h1>
+        </div>
+      )}
       <div
         id={CHART_ID}
         style={{
