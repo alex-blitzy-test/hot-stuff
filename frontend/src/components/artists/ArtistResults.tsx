@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Track } from '../../types/api';
 
@@ -26,6 +27,22 @@ interface ArtistTrackGroup {
   spotifyId: string;
   /** Earliest chart week at which the group's current peak rank was reached. */
   peakRankWeek: string;
+}
+
+/**
+ * What one result row is given: its group's figures, whether its rank history
+ * is the one displayed, and the container's selection callback.
+ *
+ * These three are what let the row be compared instead of rebuilt. The group
+ * object keeps its identity for as long as the payload does, because the list's
+ * grouping pass is memoised on `tracks`; `selected` is a boolean the list
+ * derives from the selection; and `onSelectTrack` is the container's stable
+ * callback.
+ */
+interface ArtistResultRowProps {
+  group: ArtistTrackGroup;
+  selected: boolean;
+  onSelectTrack: (selection: ArtistTrackSelection) => void;
 }
 
 /**
@@ -101,58 +118,86 @@ function groupAppearances(tracks: Track[]): ArtistTrackGroup[] {
   return Array.from(groups.values());
 }
 
+/**
+ * One grouped track, rendered as the row that selects its rank history.
+ *
+ * The row is memoised on its three props so the list rebuilds only the rows that
+ * changed: a selection change re-renders the two rows whose `selected` flag
+ * flipped, and a re-render of the container for any other reason — a search
+ * report, the summary arriving — re-renders no row at all.
+ */
+const ArtistResultRow = memo(function ArtistResultRow(
+  props: ArtistResultRowProps
+): JSX.Element {
+  const { group, selected, onSelectTrack } = props;
+
+  const metricsLine =
+    `${group.weeksOnChart} ${group.weeksOnChart === 1 ? 'week' : 'weeks'} · ` +
+    `${group.firstWeek} → ${group.lastWeek}`;
+
+  // The row is itself the selection control, so the pointer and the
+  // keyboard activations share this one call and cannot drift apart.
+  const select = () => onSelectTrack({ track: group.track, spotifyId: group.spotifyId });
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    // Space would otherwise scroll the region the rows sit in.
+    event.preventDefault();
+    select();
+  };
+
+  return (
+    // The row is itself the selection control, exactly as the ranked rows
+    // of the Tracks tab are, and it carries the control semantics that make
+    // it reachable without a pointer: focusable, marked while its chart is
+    // displayed, and activated by Enter or Space as well as by a click.
+    <div
+      className='trackRow artistTrackRow'
+      role='button'
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={select}
+      onKeyDown={handleKeyDown}
+    >
+      <span className='rowEl rank'>{group.peakRank}</span>
+      <div className='trackData'>
+        {/* The whole panel is one artist, so the track is the primary line here. */}
+        <p className='rowEl artist'>{group.track}</p>
+        {/* An appearance can carry a null artist, so the row then reports
+            the figures it does have rather than an empty second line. */}
+        {group.artist !== null && (
+          <p className='rowEl track'>{group.artist}</p>
+        )}
+        <p className='rowEl track'>{metricsLine}</p>
+      </div>
+    </div>
+  );
+});
+
 export default function ArtistResults(props: ArtistResultsProps): JSX.Element {
   const { tracks, selectedTrack, onSelectTrack } = props;
-  const groups = groupAppearances(tracks);
+
+  /*
+   * The container re-renders on every search report, on the summary arriving
+   * and on every row click, each time handing over the same `tracks` array, so
+   * the grouping pass is memoised on that reference: the payload is walked once
+   * per payload rather than once per render, and the group objects it yields
+   * keep their identity for the memoised rows below.
+   */
+  const groups = useMemo(() => groupAppearances(tracks), [tracks]);
 
   return (
     <>
-      {groups.map((group) => {
-        const metricsLine =
-          `${group.weeksOnChart} ${group.weeksOnChart === 1 ? 'week' : 'weeks'} · ` +
-          `${group.firstWeek} → ${group.lastWeek}`;
-
-        // The row is itself the selection control, so the pointer and the
-        // keyboard activations share this one call and cannot drift apart.
-        const select = () => onSelectTrack({ track: group.track, spotifyId: group.spotifyId });
-
-        const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-          if (event.key !== 'Enter' && event.key !== ' ') {
-            return;
-          }
-          // Space would otherwise scroll the region the rows sit in.
-          event.preventDefault();
-          select();
-        };
-
-        return (
-          // The row is itself the selection control, exactly as the ranked rows
-          // of the Tracks tab are, and it carries the control semantics that make
-          // it reachable without a pointer: focusable, marked while its chart is
-          // displayed, and activated by Enter or Space as well as by a click.
-          <div
-            className='trackRow artistTrackRow'
-            key={group.track}
-            role='button'
-            tabIndex={0}
-            aria-pressed={group.track === selectedTrack}
-            onClick={select}
-            onKeyDown={handleKeyDown}
-          >
-            <span className='rowEl rank'>{group.peakRank}</span>
-            <div className='trackData'>
-              {/* The whole panel is one artist, so the track is the primary line here. */}
-              <p className='rowEl artist'>{group.track}</p>
-              {/* An appearance can carry a null artist, so the row then reports
-                  the figures it does have rather than an empty second line. */}
-              {group.artist !== null && (
-                <p className='rowEl track'>{group.artist}</p>
-              )}
-              <p className='rowEl track'>{metricsLine}</p>
-            </div>
-          </div>
-        );
-      })}
+      {groups.map((group) => (
+        <ArtistResultRow
+          group={group}
+          key={group.track}
+          selected={group.track === selectedTrack}
+          onSelectTrack={onSelectTrack}
+        />
+      ))}
     </>
   );
 }
