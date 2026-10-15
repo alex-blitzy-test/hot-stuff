@@ -21,6 +21,7 @@ and every other assertion reads ``app.config`` values only.
 '''
 
 import importlib
+import traceback
 
 import pytest
 from flask import Flask
@@ -52,6 +53,19 @@ UNUSABLE_DATABASE_URLS = [
         id='pg-port-refused',
     ),
 ]
+
+# The credential the redaction test supplies: a userinfo pair on a host that
+# nothing answers, written as a string that is not a URL at all. Parsing fails,
+# which is what makes SQLAlchemy repeat the whole string in its own message, so
+# this is the one shape whose value used to reach the process log; the test
+# below therefore reads the message and the printed traceback both. Assembled
+# from its parts at run time, so this module's own text holds no scannable
+# secret of its own.
+CREDENTIAL_USER = 'hotstuff'
+CREDENTIAL_PASSWORD = 'SuP3r-S3cret' + '-pw'
+CREDENTIAL_DATABASE_URL = (
+    f'{CREDENTIAL_USER}:{CREDENTIAL_PASSWORD}@127.0.0.1:59999/db'
+)
 
 
 def test_prod_config_fails_fast_without_database_url(monkeypatch):
@@ -160,3 +174,32 @@ def test_app_module_builds_the_application_from_the_factory(monkeypatch):
     # the test configuration: TESTING is left at Flask's default by every
     # configuration but TestConfig, which sets it
     assert module.app.config['TESTING'] is False
+
+
+def test_unusable_database_url_never_echoes_the_credential(monkeypatch):
+    '''The failure names the variable and the failure's class, not the value.
+
+    The supplied string cannot be parsed, so SQLAlchemy's own exception text
+    carries it whole - user, password and connection detail alike. Neither
+    the ``RuntimeError``'s message nor the traceback that gets printed for
+    it may repeat any part of it, which keeps the credential out of the
+    container's log.
+    '''
+    monkeypatch.setenv('DATABASE_URL', CREDENTIAL_DATABASE_URL)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        create_app(ProdConfig)
+
+    message = str(exc_info.value)
+    assert 'DATABASE_URL' in message
+    # the class the startup probe caught, so the operator still learns what
+    # failed without learning the value: the original exception stays bound to
+    # __context__ even though its own text is never printed
+    assert type(exc_info.value.__context__).__name__ in message
+    assert CREDENTIAL_PASSWORD not in message
+    assert CREDENTIAL_USER not in message
+
+    # what a process writes to its own log when nothing catches the failure
+    printed = ''.join(traceback.format_exception(exc_info.value))
+    assert CREDENTIAL_PASSWORD not in printed
+    assert CREDENTIAL_USER not in printed

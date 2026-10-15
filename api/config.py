@@ -94,11 +94,14 @@ def check_database_url(url: str) -> None:
     directory or a refused port. The connection is closed again immediately, so
     the check costs one round trip and leaves no pool behind.
 
-    What fails is re-raised as a ``RuntimeError`` naming the variable the operator
-    has to correct, with SQLAlchemy's own message chained as its cause; this
-    wrapper adds no copy of the string itself. The message is written for the
-    process's own log at construction, and never reaches a response, because no
-    request exists yet.
+    What fails is re-raised as a ``RuntimeError`` naming the variable the
+    operator has to correct and the failure's class, and carrying neither
+    the connection string nor any of SQLAlchemy's own text: the value is
+    a credential, and this message goes to the process's own log at
+    construction. The original exception stays reachable through
+    ``__context__`` for a debugger, but its context is suppressed, so the
+    log line prints nothing of the value. No response carries the message
+    either, because no request exists yet.
     '''
     engine: Engine | None = None
     try:
@@ -107,8 +110,9 @@ def check_database_url(url: str) -> None:
             pass
     except (SQLAlchemyError, ImportError, ValueError, OSError) as exc:
         raise RuntimeError(
-            f'DATABASE_URL is not a usable connection string: {exc}'
-        ) from exc
+            'DATABASE_URL is not a usable connection string '
+            f'({type(exc).__name__})'
+        ) from None
     finally:
         if engine is not None:
             engine.dispose()
