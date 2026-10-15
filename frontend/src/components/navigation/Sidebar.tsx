@@ -50,10 +50,17 @@ const StSidebar = styled(Sidebar)<{ nav?: boolean }>`
   background-color: var(--dark-2);
   z-index: 2;
   transition: opacity 0.5s;
-  ${(props) => (props.nav ? 'opacity: 1;' : 'opacity: 0;')};
+
+  /* The closed rail is hidden by opacity alone, which does not take it out of
+     hit testing: at z-index 2 its fixed 35vw by full-height box stays the
+     topmost target over the panel's own controls. Pointer input therefore
+     follows the same nav signal the opacity does, and the breakpoint below,
+     where the rail is permanently visible, restores it. */
+  ${(props) => (props.nav ? 'opacity: 1;' : 'opacity: 0; pointer-events: none;')};
 
   @media only screen and (min-width: 800px) {
     opacity: 1;
+    pointer-events: auto;
     width: 15vw;
   }
 `;
