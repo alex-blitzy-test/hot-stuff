@@ -10,6 +10,19 @@ and it now rejects a segment outside its allow-list with 400 rather than letting
 `getattr` resolve an arbitrary attribute of the model class. Both halves are
 pinned here: the eight allow-listed features and their payload, and the 400 that
 replaced the previous AttributeError-driven 500.
+
+The order those rows arrive in is a third premise, and it comes from storage
+rather than from the query: the route projects them through an unordered
+`with_entities` call, so they come back in rowid order, and this table's rowid
+is its `index` primary key. The fixture declares `index` and `year` ascending
+together, so it is that correspondence, not the order the fixture inserted the
+six rows in, that makes the premise hold, and `get_rolling_avg` rolls the rows
+in the order it receives them. The assertions below are therefore an
+`index`-order assumption as well as a rolling-window one, and a renumbered
+`index` would move the years and the rolling values they expect. The route must
+not gain an `ORDER BY` to make that premise explicit: its payload and its row
+order are frozen, so the dependency is recorded here instead of being enforced
+in SQL.
 '''
 
 import pytest
@@ -25,6 +38,19 @@ RECOGNISED_FEATURES = (
     'speechiness',
     'tempo',
     'valence',
+)
+
+# The names the route refuses. Both halves of the derivation above are pinned
+# here: the three model class attributes that are not columns at all - the two
+# `getattr` used to resolve (`query`, `__tablename__`) and `metadata` - and the
+# two real columns the derivation subtracts on purpose, `index` (the row key)
+# and `year` (the label the route projects for itself).
+REFUSED_FEATURES = (
+    'query',
+    '__tablename__',
+    'metadata',
+    'index',
+    'year',
 )
 
 # The two years the window covers, in the order the endpoint returns them.
@@ -73,9 +99,10 @@ def test_unknown_feature_is_rejected_with_400(client):
     assert response.get_json() == {'error': 'Unknown feature: not_a_feature'}
 
 
-@pytest.mark.parametrize('feature', ['query', '__tablename__'])
+@pytest.mark.parametrize('feature', REFUSED_FEATURES)
 def test_model_attributes_are_not_accepted_as_features(client, feature):
-    '''Names that used to resolve through getattr on the model class.'''
+    '''Names the allow-list refuses: non-column model attributes and the two
+    columns it subtracts.'''
     response = client.get(f'/api/analysis/{feature}')
 
     assert response.status_code == 400

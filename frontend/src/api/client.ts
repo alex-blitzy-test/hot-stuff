@@ -105,9 +105,16 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   }
 }
 
-/** One week of the chart: `GET /api/week/<week>`. */
+/**
+ * One week of the chart: `GET /api/week/<week>`.
+ *
+ * The week is a single path segment, so it is percent-encoded here exactly as
+ * the artist segment is in {@link getArtist}: a value carrying `/`, `?` or `#`
+ * would otherwise address a different rule, truncate the path or append a
+ * query. The encoding is a no-op for the ISO dates the date picker produces.
+ */
 export async function getWeek(week: string, signal?: AbortSignal): Promise<WeekResponse> {
-  return get<WeekResponse>(`/api/week/${week}`, signal);
+  return get<WeekResponse>(`/api/week/${encodeURIComponent(week)}`, signal);
 }
 
 /**
@@ -142,6 +149,11 @@ export async function getTrack(spotifyId: string, signal?: AbortSignal): Promise
 /**
  * One feature's yearly means and rolling average: `GET /api/analysis/<feature>`.
  *
+ * The feature is a single path segment, so it is percent-encoded here exactly
+ * as the artist segment is in {@link getArtist}: a value carrying `/`, `?` or
+ * `#` would otherwise address a different rule, truncate the path or append a
+ * query. The encoding is a no-op for the seven names the feature select offers.
+ *
  * A feature outside the server's allow-list answers 400 and arrives here as an
  * `ApiError` carrying that status and body.
  */
@@ -149,7 +161,7 @@ export async function getAnalysis(
   feature: string,
   signal?: AbortSignal,
 ): Promise<AnalysisResponse> {
-  return get<AnalysisResponse>(`/api/analysis/${feature}`, signal);
+  return get<AnalysisResponse>(`/api/analysis/${encodeURIComponent(feature)}`, signal);
 }
 
 /**

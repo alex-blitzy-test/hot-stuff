@@ -46,9 +46,25 @@ export default function ArtistSearch(props: ArtistSearchProps): JSX.Element {
    * wires its children — would otherwise hand over a new function identity on
    * every render, restarting the timer each time and leaving the debounce
    * permanently reset.
+   *
+   * The ref is created here but written below, because lazy initialisation is
+   * the only write to `ref.current` that rendering permits: a concurrent render
+   * React discards would otherwise leave the ref holding a callback from a
+   * render that never committed.
    */
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+
+  /*
+   * No dependency array, deliberately: this effect runs after every commit, so
+   * the ref holds the latest committed callback even when the callback alone
+   * changes identity and the term does not. It is declared before the debounce
+   * effect because effects run in declaration order within a commit, and that
+   * effect's blank-term branch reads the ref synchronously — it must already
+   * see this commit's callback when it runs.
+   */
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   useEffect(() => {
     const artist = term.trim();

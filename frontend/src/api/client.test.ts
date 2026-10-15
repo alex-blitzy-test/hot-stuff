@@ -9,8 +9,12 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AnalysisResponse, ArtistSummary, Track, WeekResponse } from '../types/api';
+import type { AnalysisResponse, ArtistSummary, WeekResponse } from '../types/api';
 import { ApiError, getAnalysis, getArtist, getArtistSummary, getTrack, getWeek } from './client';
+// The shared `Track` fixture set, so the wire shape has exactly one definition
+// in the suite: the compiler checks its fifteen fields against `Track` there,
+// next to the literals themselves.
+import { artistAppearances } from '../test/fixtures';
 
 // The transport, mocked. The real module is kept and only `get` is replaced: a
 // bare `vi.mock('axios')` would automock `isAxiosError` into a function
@@ -62,29 +66,11 @@ function asApiError(err: unknown): ApiError {
 
 /* Payload fixtures, each checked against the interface it stands for. */
 
-const track: Track = {
-  id: 1,
-  week: '2021-11-13',
-  rank: 1,
-  track: 'Hey Jude',
-  artist: 'The Beatles',
-  spotify_id: 'sid-a',
-  energy: 0.41,
-  danceability: 0.51,
-  valence: 0.51,
-  liveness: 0.11,
-  speechiness: 0.028,
-  acousticness: 0.47,
-  instrumentalness: 0.012,
-  loudness: -8.1,
-  tempo: 74.4,
-};
-
-const artistTracks: Track[] = [track];
-
 const weekPayload: WeekResponse = {
   week: '2021-11-13',
-  songs: [track],
+  // The shared fixture's row for that same week, so the payload's own `week` and
+  // the song it carries agree; the rows themselves live in `test/fixtures.ts`.
+  songs: [artistAppearances[2]],
   averages: [{ feature: 'Energy', mean: 62, full: 100 }],
   avgTempo: 120,
 };
@@ -131,8 +117,9 @@ interface RequestCase {
 // One row per endpoint. `toHaveBeenCalledWith` matches the argument list
 // exactly, so each row also proves the client passes the path as its only
 // argument and no config object. The artist rows and the reserved-character
-// track row are what prove a path segment is percent-encoded, and the summary
-// row that the suffix is appended to that same encoded segment.
+// track, week and feature rows are what prove a path segment is
+// percent-encoded, and the summary row that the suffix is appended to that same
+// encoded segment.
 const requestCases: readonly RequestCase[] = [
   {
     situation: 'getWeek requests the week path and resolves with the unwrapped payload',
@@ -144,13 +131,13 @@ const requestCases: readonly RequestCase[] = [
     situation: 'getArtist percent-encodes the space in an artist name',
     url: '/api/artist/Elvis%20Presley',
     call: () => getArtist('Elvis Presley'),
-    payload: artistTracks,
+    payload: artistAppearances,
   },
   {
     situation: 'getArtist escapes the comma, space and ampersand of an artist name',
     url: '/api/artist/Earth%2C%20Wind%20%26%20Fire',
     call: () => getArtist('Earth, Wind & Fire'),
-    payload: artistTracks,
+    payload: artistAppearances,
   },
   {
     situation: 'getArtistSummary appends /summary to the encoded artist segment',
@@ -162,7 +149,7 @@ const requestCases: readonly RequestCase[] = [
     situation: 'getTrack leaves a base-62 Spotify id unchanged by the encoding',
     url: '/api/track/sid-a',
     call: () => getTrack('sid-a'),
-    payload: artistTracks,
+    payload: artistAppearances,
   },
   {
     // The id is not a constant: it is `Track.spotify_id` as the API returned
@@ -171,13 +158,32 @@ const requestCases: readonly RequestCase[] = [
     situation: 'getTrack percent-encodes the reserved characters of a Spotify id',
     url: '/api/track/sid%2Fa%3Fb%23c',
     call: () => getTrack('sid/a?b#c'),
-    payload: artistTracks,
+    payload: artistAppearances,
   },
   {
-    situation: 'getAnalysis passes the feature name through unencoded',
+    situation: 'getAnalysis leaves a feature name unchanged by the encoding',
     url: '/api/analysis/tempo',
     call: () => getAnalysis('tempo'),
     payload: analysisPayload,
+  },
+  {
+    // The feature is whatever `string` the caller passes, and only seven
+    // literal names reach it today. The row above cannot prove the encoding for
+    // the same reason as the constant track id: `encodeURIComponent` is a no-op
+    // for those lowercase names.
+    situation: 'getAnalysis percent-encodes the query delimiter of a feature name',
+    url: '/api/analysis/tempo%3Fx',
+    call: () => getAnalysis('tempo?x'),
+    payload: analysisPayload,
+  },
+  {
+    // The week is the caller's `string` too, and the date picker hands it an
+    // ISO date. The constant-week row above cannot prove the encoding either:
+    // `encodeURIComponent` leaves such a date unchanged.
+    situation: 'getWeek percent-encodes the fragment delimiter of a week value',
+    url: '/api/week/2021-11-13%23x',
+    call: () => getWeek('2021-11-13#x'),
+    payload: weekPayload,
   },
 ];
 
@@ -228,9 +234,9 @@ describe('client request configuration', () => {
 
   it("forwards an explicit AbortSignal as the transport's second argument", async () => {
     const controller = new AbortController();
-    mocks.get.mockResolvedValue({ data: artistTracks });
+    mocks.get.mockResolvedValue({ data: artistAppearances });
 
-    await expect(getArtist('Elvis Presley', controller.signal)).resolves.toBe(artistTracks);
+    await expect(getArtist('Elvis Presley', controller.signal)).resolves.toBe(artistAppearances);
     expect(mocks.get).toHaveBeenCalledTimes(1);
     expect(mocks.get).toHaveBeenCalledWith('/api/artist/Elvis%20Presley', {
       signal: controller.signal,

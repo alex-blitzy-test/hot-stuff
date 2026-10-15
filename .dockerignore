@@ -8,3 +8,7 @@
 **/build
 /.git
 /blitzy
+# the host's development environment file stays out of the build context, so
+# the container's configuration comes only from its own environment and no
+# setting in it is resolved from a file at run time
+/.flaskenv

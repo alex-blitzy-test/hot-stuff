@@ -45,6 +45,13 @@ COPY --chown=appuser:appuser . .
 # static_folder='../frontend/dist'
 COPY --chown=appuser:appuser --from=frontend-build /app/dist ./frontend/dist
 
+# the shipped container's run configuration: debug is off here, so neither
+# Werkzeug's interactive debugger nor the code reloader can be resolved from a
+# development environment file at run time — FLASK_DEBUG is consulted before
+# FLASK_ENV, and python-dotenv does not overwrite a variable the image has
+# already set
+ENV FLASK_DEBUG=0
+
 EXPOSE 5000
 
 USER appuser
