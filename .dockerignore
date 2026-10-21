@@ -1,3 +1,12 @@
 /frontend/node_modules
 /venv
 /data
+/frontend/dist
+# Generated build output never enters the build context: the pattern is matched
+# by directory name, so it excludes a build directory at any depth.
+**/build
+/.git
+# the host's development environment file stays out of the build context, so
+# the container's configuration comes only from its own environment and no
+# setting in it is resolved from a file at run time
+/.flaskenv

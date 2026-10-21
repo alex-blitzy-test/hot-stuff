@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
+from typing import Any
 import pandas as pd
 
 
-def get_query_week(date):
+def get_query_week(date: str | None) -> str:
     '''Returns date of either last or next Saturday in YYYY-MM-DD format
     depending on time of the week'''
 
@@ -24,7 +25,7 @@ def get_query_week(date):
         return str(next_sat)[:10]
 
 
-def get_rolling_avg(data):
+def get_rolling_avg(data: list[dict[str, Any]]) -> list[dict[str, Any]]:
     '''Takes data from yearly average query and adds 5 year rolling average'''
 
     feature = [i for i in data[0].keys() if i != 'year'][0]
@@ -37,7 +38,7 @@ def get_rolling_avg(data):
     return d
 
 
-def get_weekly_data(data):
+def get_weekly_data(data: list[dict[str, Any]]) -> dict[str, Any]:
     '''Takes weekly song data and returns average of each feature'''
 
     d = {}

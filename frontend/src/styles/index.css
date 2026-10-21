@@ -322,3 +322,116 @@ body {
     height: 50px;
   }
 }
+
+/* artists */
+
+.artistSummary {
+  display: flex;
+  flex-direction: column;
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 3px;
+  background-color: var(--dark-3);
+  color: var(--light);
+  overflow-wrap: anywhere;
+}
+
+.artistSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* Space-between alone leaves no gap once a long value fills the row, so the
+     label and its value would touch; the house 10px rhythm keeps them apart. */
+  column-gap: 10px;
+  margin: 5px 0;
+}
+
+.artistSummaryLabel {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--light);
+  /* The label keeps its own width, so a long value beside it wraps inside its
+     own box instead of squeezing the label into a mid-word break. */
+  flex-shrink: 0;
+}
+
+.artistSummaryValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--light);
+}
+
+/* artists: interactive states */
+
+/* The result row is the selection control for the chart, so it takes the
+   pointer — as do its own children, whose `.rowEl` rule sets `cursor: default`.
+   Both selectors key on the row's `role`, which the Tracks tab's ranked rows
+   do not carry, so their appearance is unchanged. */
+.trackRow[role='button'],
+.trackRow[role='button'] .rowEl {
+  cursor: pointer;
+}
+
+/* Hover: the surface lifts (`--dark-3`'s channels at a higher alpha) and a
+   `--grey` hairline marks the row under the pointer. */
+.trackRow[role='button']:hover {
+  background-color: rgba(54, 54, 54, 0.8);
+  box-shadow: inset 0 0 0 1px var(--grey);
+}
+
+/* Pressed: the surface lifts further and the hairline takes the accent. */
+.trackRow[role='button']:active {
+  background-color: rgba(54, 54, 54, 0.95);
+  box-shadow: inset 0 0 0 1px var(--purp);
+}
+
+/* Selected: a `--purp` accent bar marks the row whose rank history the chart
+   draws. */
+.trackRow[role='button'][aria-pressed='true'] {
+  background-color: rgba(54, 54, 54, 0.8);
+  box-shadow: inset 3px 0 var(--purp);
+}
+
+.trackRow[role='button'][aria-pressed='true']:hover,
+.trackRow[role='button'][aria-pressed='true']:active {
+  background-color: rgba(54, 54, 54, 0.95);
+  box-shadow: inset 3px 0 var(--purp), inset 0 0 0 1px var(--grey);
+}
+
+/* The rank badge is a fixed column on every row, so long content beside it must
+   not shrink it. The shared `.rank` rule is frozen, so this is scoped to the
+   Artists rows — the Tracks tab keeps the behaviour it has today. */
+.trackRow[role='button'] > .rank {
+  flex-shrink: 0;
+}
+
+/* Keyboard focus: an accent ring, visible against `--dark-1`, on the panel's
+   two focusable controls. */
+.trackRow[role='button']:focus-visible,
+.inputField[aria-label='Artist']:focus-visible {
+  outline: 2px solid var(--purp);
+  outline-offset: 2px;
+}
+
+/* The search field's own hover and press feedback, matching the rows'. */
+.inputField[aria-label='Artist']:hover {
+  background-color: rgba(54, 54, 54, 0.8);
+  box-shadow: inset 0 0 0 1px var(--grey);
+}
+
+.inputField[aria-label='Artist']:active {
+  background-color: rgba(54, 54, 54, 0.95);
+  box-shadow: inset 0 0 0 1px var(--purp);
+}
+
+/* The card's headline figure keeps the house 25px emphasis without the ranked
+   badge's box: no width, max-width or margin, so its value sits flush with the
+   five others in the card's value column. Its line box is the row rhythm the
+   13px label already has (1.5 x 13px), which keeps all six rows one height. */
+.artistSummaryHeadline {
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 19.5px;
+  text-align: right;
+  color: var(--light);
+}
